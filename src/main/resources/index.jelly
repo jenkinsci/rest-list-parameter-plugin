@@ -1,0 +1,5 @@
+<?jelly escape-by-default='true'?>
+<div>
+  Lets you specify a REST endpoint, that returns a Json or XML list of String values that can be picked from as a build parameter.<br />
+  The REST response can be parsed/selected via Json-Path or xPath and additionally filtered before presenting the values for selection.
+</div>

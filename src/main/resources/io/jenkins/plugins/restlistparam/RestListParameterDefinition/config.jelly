@@ -1,0 +1,40 @@
+<!-- this is the page fragment displayed to set up a job -->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+
+  <f:entry title="${%parameter.name}" field="name">
+    <f:textbox default="REST_VALUE" />
+  </f:entry>
+
+  <f:entry title="${%parameter.restEndpoint}" field="restEndpoint">
+    <f:textbox default="" />
+  </f:entry>
+
+  <f:entry title="${%parameter.credentialId}" field="credentialId">
+      <c:select default="${descriptor.getDefaultCredentialID()}" />
+  </f:entry>
+
+  <f:entry title="${%parameter.mimeTape}" field="mimeType">
+    <f:enum>${it}</f:enum>
+  </f:entry>
+
+  <f:entry title="${%parameter.valueExpression}" field="valueExpression">
+    <f:textbox default="" />
+  </f:entry>
+
+  <f:entry title="${%parameter.description}" field="description">
+    <f:textarea />
+  </f:entry>
+
+  <!-- Some advances options -->
+  <f:advanced>
+    <f:entry title="${%parameter.valueFilterPattern}" field="filter">
+      <f:textbox default=".*" />
+    </f:entry>
+
+    <f:entry title="${%parameter.defaultValue}" field="defaultValue">
+      <f:textbox default="" />
+    </f:entry>
+  </f:advanced>
+
+</j:jelly>
