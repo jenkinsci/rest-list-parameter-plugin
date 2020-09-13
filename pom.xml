@@ -52,7 +52,6 @@
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
   </issueManagement>
 
-
   <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
   <scm>
       <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
@@ -60,6 +59,17 @@
       <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
   </scm>
   -->
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/h1dden-da3m0n/${project.artifactId}-plugin</url>
+  </issueManagement>
+
+  <url>https://github.com/h1dden-da3m0n/${project.artifactId}-plugin</url>
+  <scm>
+    <connection>scm:git:git://github.com/h1dden-da3m0n/${project.artifactId}-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:h1dden-da3m0n/${project.artifactId}-plugin.git</developerConnection>
+    <url>https://github.com/h1dden-da3m0n/${project.artifactId}-plugin</url>
+  </scm>
 
   <dependencyManagement>
     <dependencies>
