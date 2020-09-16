@@ -6,8 +6,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
       time: "10:00"
-    ignore:
-      - dependency_name: "org.jenkins-ci.main:jenkins-core"
 
   - package-ecosystem: "github-actions"
     directory: "/"
