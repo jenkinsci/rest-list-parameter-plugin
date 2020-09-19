@@ -1,5 +1,6 @@
 package io.jenkins.plugins.restlistparam;
 
+import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.Extension;
 import hudson.model.Item;
 import hudson.model.ParameterDefinition;
@@ -23,6 +24,9 @@ import org.kohsuke.stapler.export.Exported;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.Optional;
+
+// TODO add Form-validation for select value
 
 public class RestListParameterDefinition extends SimpleParameterDefinition {
   private static final long serialVersionUID = 3453376762337829455L;
@@ -97,9 +101,13 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   @Exported
   public Collection<String> getValues()
   {
-    // Optional<StandardUsernamePasswordCredentials> credential = CredentialsUtils.findCredentials(credentialId);
+    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
 
-    ResultContainer<Collection<String>> values = RestValueService.get(restEndpoint, null, mimeType, valueExpression, filter);
+    ResultContainer<Collection<String>> values = RestValueService.get(restEndpoint,
+                                                                      credentials.orElse(null),
+                                                                      mimeType,
+                                                                      valueExpression,
+                                                                      filter);
 
     setErrorMsg(values.getErrorMsg().orElse(""));
 
@@ -126,8 +134,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     return new RestListParameterValue(getName(), value, getDescription());
   }
 
-  @CheckForNull
   @Override
+  @CheckForNull
   public ParameterValue createValue(StaplerRequest req,
                                     JSONObject jo)
   {
@@ -144,14 +152,12 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       return Messages.RLP_DescriptorImpl_DisplayName();
     }
 
-    @SuppressWarnings("unused")
     public ListBoxModel doFillCredentialIdItems(@AncestorInPath Item context,
                                                 @QueryParameter String credentialId)
     {
       return CredentialsUtils.doFillCredentialsIdItems(context, credentialId);
     }
 
-    @SuppressWarnings("unused")
     public FormValidation doCheckCredentialIdItems(@QueryParameter final String value)
     {
       return CredentialsUtils.doCheckFillCredentialsId(value);
