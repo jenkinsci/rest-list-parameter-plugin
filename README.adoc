@@ -1,0 +1,49 @@
+[[rest-list-parameter-plugin]]
+= REST-List Parameter Plugin
+:toc: macro
+:toc-title:
+
+image:https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/master/badge/icon[link="https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/master/"]
+image:https://img.shields.io/github/license/h1dden-da3m0n/rest-list-parameter-plugin?color=green[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/blob/main/LICENSE"]
+image:https://img.shields.io/github/contributors/h1dden-da3m0n/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/graphs/contributors"]
+image:https://img.shields.io/jenkins/plugin/i/rest-list-parameter.svg?color=blue&label=installations[link="https://plugins.jenkins.io/rest-list-parameter"]
+image:https://img.shields.io/github/release/h1dden-da3m0n/rest-list-parameter-plugin.svg?label=changelog[link="https://github.com/jenkinsci/rest-list-parameter-plugin/releases/latest"]
+
+[#introduction]
+== Introduction
+
+This Plugin provides parameter type that can request a REST endpoint and offer a list of values parsed from the response value at build start time.
+The REST responses may contain Json or XML, which can be parsed with link:https://restfulapi.net/json-jsonpath/[Json-Path] and link:https://www.w3schools.com/xml/xpath_syntax.asp[xPath] respectively.
+If the REST endpoint requires authentication, then either Basic or Bearer authentication can be used.
+
+toc::[]
+
+[#changelog]
+== Changelog
+
+Release notes can be found in the link:https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/releases[GitHub Releases]
+
+[#configuration]
+== Configuration
+
+image::.media/parameter.png[Parameter configuration (Advanced collapsed)]
+image::.media/parameter-full.png[Parameter configuration (Advanced expanded)]
+
+[#jsonPath-configuration]
+=== Json-Path configuration
+
+image::.media/json-path.png[]
+
+TODO text
+
+[#xPath-configuration]
+=== xPath configuration
+
+image::.media/xPath.png[]
+
+TODO text
+
+[#auth-configuration]
+=== Authentication configuration
+
+TODO
