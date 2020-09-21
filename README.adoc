@@ -3,7 +3,7 @@
 :toc: macro
 :toc-title:
 
-image:https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/master/badge/icon[link="https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/master/"]
+image:https://img.shields.io/github/workflow/status/h1dden-da3m0n/rest-list-parameter-plugin/Build%20and%20Test%20Plugin[GitHub Workflow Status]
 image:https://img.shields.io/github/license/h1dden-da3m0n/rest-list-parameter-plugin?color=green[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/blob/main/LICENSE"]
 image:https://img.shields.io/github/contributors/h1dden-da3m0n/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/graphs/contributors"]
 image:https://img.shields.io/jenkins/plugin/i/rest-list-parameter.svg?color=blue&label=installations[link="https://plugins.jenkins.io/rest-list-parameter"]
@@ -23,23 +23,36 @@ toc::[]
 
 Release notes can be found in the link:https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/releases[GitHub Releases]
 
+[#features]
+== Features
+
+* Specify any REST/Web endpoint that returns either a Json or XML response with values to select from for a build
+* Authenticate against the endpoint if required (either with `BASIC` or `BEARER` authentication)
+* Filter/Pars the values of the web response with Json-Path or xPath (depending on MIME type)
+* Filter the already filtered/parsed values via a REGEX
+* Set the per default preselected value
+* User-friendly error communication
+
 [#configuration]
 == Configuration
 
 image::.media/parameter.png[Parameter configuration (Advanced collapsed)]
 image::.media/parameter-full.png[Parameter configuration (Advanced expanded)]
+image::.media/build.png[Demo Build (+ showcasing error messaging)]
 
 [#jsonPath-configuration]
 === Json-Path configuration
 
-image::.media/json-path.png[]
+image::.media/json-path.png[Demo config for Json-Path]
 
-TODO text
+If you expect the response of the specified endpoint to produce a Json response and need to utilize Json-Path, then you have to set the MIME type to _APPLICATION_JSON_ (this will also send this MIME as `ACCEPT` header) and provide the desired Json-Path in the _Value Expression_ field.
+
+The result of such a configuration will be the application of the Json-Path on the response Json to pars the string values later provided in the _Build with Parameter_ dropdown of this parameter.
 
 [#xPath-configuration]
 === xPath configuration
 
-image::.media/xPath.png[]
+image::.media/xPath.png[Demo config for xPath]
 
 TODO text
 
@@ -47,3 +60,37 @@ TODO text
 === Authentication configuration
 
 TODO
+
+[#contributing]
+== Contributing
+
+I welcome all contributions and pull requests!
+If you have a larger feature in mind please open an issue, so we can discuss the implementation before you start.
+
+For further contributing info please have a look at the JenkinsCI link:https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
+
+[#development]
+== Development
+
+=== Requirements
+
+* Java 8 and newer
+* Maven 3 and newer
+* (optional) a test Jenkins instance to deploy the plugin SNAPSHOT to for testing
+
+=== Build
+
+[source,shell script]
+----
+$ # build, test and package to hpi (hpi can be deployed to test Jenkins)
+$ mvn -B package --file pom.xml
+----
+
+[source,shell script]
+----
+$ # build, test, package and launch test Jenkins
+$ mvn -B hpi:run --file pom.xml
+----
+
+=== Release a new Version
+
