@@ -54,12 +54,20 @@ The result of such a configuration will be the application of the Json-Path on t
 
 image::.media/xPath.png[Demo config for xPath]
 
-TODO text
+If you expect the response of the specified endpoint to produce an XML response and need to utilize xPath, then you have to set the MIME type to _APPLICATION_XML_ (this will also send this MIME as `ACCEPT` header) and provide the desired xPath in the _Value Expression_ field.
+
+The result of such a configuration will be the application of the xPath on the response XML to pars the string values later provided in the _Build with Parameter_ dropdown of this parameter.
 
 [#auth-configuration]
 === Authentication configuration
 
-TODO
+Depending on the authentication requirement for the REST/Web endpoint there are three supported methods:
+
+* `NONE` if there is no authentication requirement simply don't select any _Credential ID_
+* `BASIC` if this authentication type is required, then simply select any Username and Password credential in the _Credential ID_ field
+* `BEARER` if this authentication type is required, then simply select any Secret Text credential in the _Credential ID_ field
+
+NOTE: The Authentication header will be build and added based on the type of the selected credential type.
 
 [#contributing]
 == Contributing
@@ -94,3 +102,6 @@ $ mvn -B hpi:run --file pom.xml
 
 === Release a new Version
 
+NOTE: This Plugin uses link:https://semver.org/spec/v2.0.0.html[SemVer] to version its releases
+
+To creat a new release follow the instruction found for the link:https://github.com/jenkinsci/incrementals-tools[Incremental tools] to create a release whilst incrementing the correct position of the SemVer.
