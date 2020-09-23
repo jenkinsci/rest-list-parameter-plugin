@@ -12,6 +12,7 @@ import io.jenkins.plugins.restlistparam.logic.RestValueService;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.util.CredentialsUtils;
+import io.jenkins.plugins.restlistparam.util.PathExpressionValidationUtils;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
@@ -160,8 +161,9 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       if (StringUtils.isNotBlank(value)) {
         switch (mimeType) {
           case APPLICATION_JSON:
+            return PathExpressionValidationUtils.doCheckJsonPathExpression(value);
           case APPLICATION_XML:
-            return FormValidation.ok();
+            return PathExpressionValidationUtils.doCheckXPathExpression(value);
           default:
             return FormValidation.error("Unknown MimeType");
         }
