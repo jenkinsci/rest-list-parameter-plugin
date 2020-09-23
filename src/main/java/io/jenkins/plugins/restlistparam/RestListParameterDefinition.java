@@ -19,14 +19,12 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.export.Exported;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
-
-// TODO add Form-validation for select value
 
 public class RestListParameterDefinition extends SimpleParameterDefinition {
   private static final long serialVersionUID = 3453376762337829455L;
@@ -38,6 +36,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private final String filter;
   private final String defaultValue;
   private String errorMsg = "";
+  private Collection<String> values = Collections.emptyList();
 
   @DataBoundConstructor
   public RestListParameterDefinition(String name,
@@ -58,65 +57,56 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
   }
 
-  public String getRestEndpoint()
-  {
+  public String getRestEndpoint() {
     return restEndpoint;
   }
 
-  public String getCredentialId()
-  {
+  public String getCredentialId() {
     return credentialId;
   }
 
-  public MimeType getMimeType()
-  {
+  public MimeType getMimeType() {
     return mimeType;
   }
 
-  public String getValueExpression()
-  {
+  public String getValueExpression() {
     return valueExpression;
   }
 
-  public String getFilter()
-  {
+  public String getFilter() {
     return filter;
   }
 
-  public String getDefaultValue()
-  {
+  public String getDefaultValue() {
     return defaultValue;
   }
 
-  void setErrorMsg(String errorMsg)
-  {
+  void setErrorMsg(String errorMsg) {
     this.errorMsg = errorMsg;
   }
 
-  public String getErrorMsg()
-  {
+  public String getErrorMsg() {
     return errorMsg;
   }
 
-  @Exported
-  public Collection<String> getValues()
-  {
-    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+  public Collection<String> getValues() {
+    if (values == null || values.isEmpty()) {
+      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
 
-    ResultContainer<Collection<String>> values = RestValueService.get(restEndpoint,
-                                                                      credentials.orElse(null),
-                                                                      mimeType,
-                                                                      valueExpression,
-                                                                      filter);
+      ResultContainer<Collection<String>> container = RestValueService.get(restEndpoint,
+                                                                           credentials.orElse(null),
+                                                                           mimeType,
+                                                                           valueExpression,
+                                                                           filter);
 
-    setErrorMsg(values.getErrorMsg().orElse(""));
-
-    return values.getValue();
+      setErrorMsg(container.getErrorMsg().orElse(""));
+      values = container.getValue();
+    }
+    return values;
   }
 
   @Override
-  public ParameterDefinition copyWithDefaultValue(ParameterValue defaultValue)
-  {
+  public ParameterDefinition copyWithDefaultValue(ParameterValue defaultValue) {
     if (defaultValue instanceof RestListParameterValue) {
       RestListParameterValue value = (RestListParameterValue) defaultValue;
       return new RestListParameterDefinition(
@@ -129,8 +119,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   }
 
   @Override
-  public ParameterValue createValue(String value)
-  {
+  public ParameterValue createValue(String value) {
     return new RestListParameterValue(getName(), value, getDescription());
   }
 
@@ -147,19 +136,46 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   public static class DescriptorImpl extends ParameterDescriptor {
     @Override
     @Nonnull
-    public String getDisplayName()
-    {
+    public String getDisplayName() {
       return Messages.RLP_DescriptorImpl_DisplayName();
     }
 
-    public ListBoxModel doFillCredentialIdItems(@AncestorInPath Item context,
-                                                @QueryParameter String credentialId)
+    public FormValidation doCheckRestEndpoint(@QueryParameter final String value) {
+      if (StringUtils.isNotBlank(value)) {
+        if (value.matches("^http(s)?://.+")) {
+          return FormValidation.ok();
+        }
+        return FormValidation.error("Rest Endpoint is no URL format (http:// or https://)");
+      }
+      return FormValidation.error("Rest Endpoint must not be empty");
+    }
+
+    public FormValidation doCheckCredentialId(@QueryParameter final String value) {
+      return CredentialsUtils.doCheckFillCredentialsId(value);
+    }
+
+    public FormValidation doCheckValueExpression(@QueryParameter final String value,
+                                                 @QueryParameter final MimeType mimeType)
+    {
+      if (StringUtils.isNotBlank(value)) {
+        switch (mimeType) {
+          case APPLICATION_JSON:
+          case APPLICATION_XML:
+            return FormValidation.ok();
+          default:
+            return FormValidation.error("Unknown MimeType");
+        }
+      }
+      return FormValidation.error("Value Expression must not be empty");
+    }
+
+    public ListBoxModel doFillCredentialIdItems(@AncestorInPath final Item context,
+                                                @QueryParameter final String credentialId)
     {
       return CredentialsUtils.doFillCredentialsIdItems(context, credentialId);
     }
 
-    public FormValidation doCheckCredentialIdItems(@QueryParameter final String value)
-    {
+    public FormValidation doCheckCredentialIdItems(@QueryParameter final String value) {
       return CredentialsUtils.doCheckFillCredentialsId(value);
     }
   }
