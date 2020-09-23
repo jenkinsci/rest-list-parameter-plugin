@@ -26,8 +26,7 @@ public class CredentialsUtils {
 
   private static final Logger log = Logger.getLogger(CredentialsUtils.class.getName());
 
-  private CredentialsUtils()
-  {
+  private CredentialsUtils() {
     throw new IllegalStateException("Utility class");
   }
 
@@ -54,8 +53,7 @@ public class CredentialsUtils {
       .includeCurrentValue(credentialsId);
   }
 
-  public static FormValidation doCheckFillCredentialsId(final String credentialsId)
-  {
+  public static FormValidation doCheckFillCredentialsId(final String credentialsId) {
     if (StringUtils.isBlank(credentialsId)) {
       return FormValidation.ok();
     }
@@ -65,8 +63,7 @@ public class CredentialsUtils {
     return FormValidation.ok();
   }
 
-  public static Optional<StandardCredentials> findCredentials(final String credentialsId)
-  {
+  public static Optional<StandardCredentials> findCredentials(final String credentialsId) {
     if (StringUtils.isBlank(credentialsId)) {
       return Optional.empty();
     }

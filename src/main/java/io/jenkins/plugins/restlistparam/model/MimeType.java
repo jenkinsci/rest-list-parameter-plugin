@@ -6,13 +6,11 @@ public enum MimeType {
 
   private final String mime;
 
-  MimeType(String mime)
-  {
+  MimeType(String mime) {
     this.mime = mime;
   }
 
-  public String getMime()
-  {
+  public String getMime() {
     return mime;
   }
 }

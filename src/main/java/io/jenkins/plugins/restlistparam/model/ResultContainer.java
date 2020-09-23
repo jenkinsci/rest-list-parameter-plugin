@@ -6,28 +6,23 @@ public class ResultContainer<V> {
   private String errorMsg = null;
   private V value;
 
-  public ResultContainer(V defaultValue)
-  {
+  public ResultContainer(V defaultValue) {
     this.value = defaultValue;
   }
 
-  public void setErrorMsg(String errorMsg)
-  {
+  public void setErrorMsg(String errorMsg) {
     this.errorMsg = errorMsg;
   }
 
-  public Optional<String> getErrorMsg()
-  {
+  public Optional<String> getErrorMsg() {
     return Optional.ofNullable(errorMsg);
   }
 
-  public void setValue(V value)
-  {
+  public void setValue(V value) {
     this.value = value;
   }
 
-  public V getValue()
-  {
+  public V getValue() {
     return value;
   }
 }
