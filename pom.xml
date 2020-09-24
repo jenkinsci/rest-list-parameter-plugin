@@ -68,7 +68,7 @@
   <scm>
     <connection>scm:git:git://github.com/h1dden-da3m0n/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:h1dden-da3m0n/${project.artifactId}-plugin.git</developerConnection>
-    <url>https://github.com/h1dden-da3m0n/${project.artifactId}-plugin</url>
+    <url>https://github.com/h1dden-da3m0n/${project.artifactId}/tree/${project.artifactId}-${revision}</url>
     <tag>${scmTag}</tag>
   </scm>
 
