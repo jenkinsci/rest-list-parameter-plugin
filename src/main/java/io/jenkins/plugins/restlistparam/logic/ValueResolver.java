@@ -1,6 +1,7 @@
 package io.jenkins.plugins.restlistparam.logic;
 
 import com.jayway.jsonpath.InvalidJsonException;
+import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.jenkins.plugins.restlistparam.Messages;
@@ -53,15 +54,18 @@ public class ValueResolver {
         log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_xPath_NoValues(), expression, xmlStr));
         container.setErrorMsg(Messages.RLP_ValueResolver_warn_xPath_NoValues());
       }
-    } catch (XPathExpressionException | IllegalArgumentException ignore) {
+    }
+    catch (XPathExpressionException | IllegalArgumentException ignore) {
       log.warning(Messages.RLP_ValueResolver_warn_xPath_ExpressionErr());
       log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_xPath_ExpressionErr(), expression, xmlStr));
       container.setErrorMsg(Messages.RLP_ValueResolver_warn_xPath_ExpressionErr());
-    } catch (SAXParseException ignore) {
+    }
+    catch (SAXParseException ignore) {
       log.warning(Messages.RLP_ValueResolver_warn_xPath_MalformedXml());
       log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_xPath_MalformedXml(), expression, xmlStr));
       container.setErrorMsg(Messages.RLP_ValueResolver_warn_xPath_MalformedXml());
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       log.warning(Messages.RLP_ValueResolver_warn_xPath_ParserInit(ex.getClass().getName()));
       log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_xPath_ParserInit(ex.getClass().getName()), expression, xmlStr));
       container.setErrorMsg(Messages.RLP_ValueResolver_warn_xPath_ParserInit(ex.getClass().getName()));
@@ -86,11 +90,18 @@ public class ValueResolver {
         log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues(), expression, jsonStr));
         container.setErrorMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues());
       }
-    } catch (PathNotFoundException ignored) {
+    }
+    catch (PathNotFoundException ignored) {
+      log.warning(Messages.RLP_ValueResolver_warn_jPath_NoValues());
+      log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues(), expression, jsonStr));
+      container.setErrorMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues());
+    }
+    catch (InvalidPathException ignored) {
       log.warning(Messages.RLP_ValueResolver_warn_jPath_ExpressionErr());
       log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_jPath_ExpressionErr(), expression, jsonStr));
       container.setErrorMsg(Messages.RLP_ValueResolver_warn_jPath_ExpressionErr());
-    } catch (InvalidJsonException ignored) {
+    }
+    catch (InvalidJsonException ignored) {
       log.warning(Messages.RLP_ValueResolver_warn_jPath_MalformedJson());
       log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_jPath_MalformedJson(), expression, jsonStr));
       container.setErrorMsg(Messages.RLP_ValueResolver_warn_jPath_MalformedJson());
