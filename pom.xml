@@ -69,6 +69,7 @@
     <connection>scm:git:git://github.com/h1dden-da3m0n/${project.artifactId}-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:h1dden-da3m0n/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/h1dden-da3m0n/${project.artifactId}-plugin</url>
+    <tag>${scmTag}</tag>
   </scm>
 
   <dependencyManagement>

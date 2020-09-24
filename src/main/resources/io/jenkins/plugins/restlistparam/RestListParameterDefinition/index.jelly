@@ -9,7 +9,7 @@
       <input type="hidden" name="name" value="${it.name}" />
       <input type="hidden" name="description" value="${it.description}" />
 
-      <select name="value" style="min-width:18rem;">
+      <select name="value" style="min-width: 18rem;">
         <j:forEach var="value" items="${it.values}" varStatus="loop">
           <f:option value="${value}" selected="${value.equals(it.defaultValue)}">
             ${value}
@@ -18,9 +18,15 @@
       </select>
 
     </div>
-    <div name="errorMsg" display="${it.errorMsg == '' ? 'none' : ''}" style="color: red">
-      ${it.errorMsg}
-    </div>
   </f:entry>
+
+  <tr display="${it.errorMsg == '' ? 'none' : ''}">
+    <td colspan="2"></td>
+    <td class="${it.errorMsg == '' ? '' : 'error'}"
+         style="margin-top: 0.2rem;"
+         name="errorMsg">
+      ${it.errorMsg}
+    </td>
+  </tr>
 
 </j:jelly>
