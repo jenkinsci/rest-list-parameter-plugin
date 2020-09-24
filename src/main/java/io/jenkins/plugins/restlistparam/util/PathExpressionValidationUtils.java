@@ -1,5 +1,6 @@
 package io.jenkins.plugins.restlistparam.util;
 
+import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import hudson.util.FormValidation;
 
@@ -28,7 +29,8 @@ public class PathExpressionValidationUtils {
     try {
       JsonPath.compile(expression);
       return FormValidation.ok();
-    } catch (Exception ignore) {
+    }
+    catch (InvalidPathException ignore) {
       return FormValidation.error("The provided Json-Path expression seems to be incorrect");
     }
   }
