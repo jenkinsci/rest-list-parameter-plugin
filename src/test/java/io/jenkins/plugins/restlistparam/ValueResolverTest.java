@@ -7,12 +7,11 @@ import org.junit.Test;
 
 import java.util.Collection;
 
-// TODO test cover ALL error cases
 public class ValueResolverTest {
+  // Json-Path Tests
   @Test
-  public void resolveJsonPathTest()
-  {
-    ResultContainer<Collection<String>> res = ValueResolver.resolveJsonPath(TestConst.testJson, "$.*.name");
+  public void resolveJsonPathTest() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveJsonPath(TestConst.validTestJson, "$.*.name");
     Assert.assertNotNull(res);
     Assert.assertFalse(res.getErrorMsg().isPresent());
     Assert.assertEquals(3, res.getValue().size());
@@ -20,9 +19,8 @@ public class ValueResolverTest {
   }
 
   @Test
-  public void resolveJsonPathErrorTest()
-  {
-    ResultContainer<Collection<String>> res = ValueResolver.resolveJsonPath(TestConst.testJson, "$.name");
+  public void emptyJsonPathResultsTest() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveJsonPath("[]", "$.*");
     Assert.assertNotNull(res);
     Assert.assertTrue(res.getErrorMsg().isPresent());
     Assert.assertEquals(0, res.getValue().size());
@@ -30,9 +28,36 @@ public class ValueResolverTest {
   }
 
   @Test
-  public void resolveXPathTest()
-  {
-    ResultContainer<Collection<String>> res = ValueResolver.resolveXPath(TestConst.testXml, "//row/name");
+  public void resolveJsonPathError1Test() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveJsonPath(TestConst.validTestJson, "$.");
+    Assert.assertNotNull(res);
+    Assert.assertTrue(res.getErrorMsg().isPresent());
+    Assert.assertEquals(0, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{}, res.getValue().toArray());
+  }
+
+  @Test
+  public void resolveJsonPathError2Test() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveJsonPath(TestConst.validTestJson, "$.name");
+    Assert.assertNotNull(res);
+    Assert.assertTrue(res.getErrorMsg().isPresent());
+    Assert.assertEquals(0, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{}, res.getValue().toArray());
+  }
+
+  @Test
+  public void invalidJsonErrorTest() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveJsonPath(TestConst.invalidTestJson, "$.*.name");
+    Assert.assertNotNull(res);
+    Assert.assertTrue(res.getErrorMsg().isPresent());
+    Assert.assertEquals(0, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{}, res.getValue().toArray());
+  }
+
+  // xPath Tests
+  @Test
+  public void resolveXPathTest() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveXPath(TestConst.validTestXml, "//row/name");
     Assert.assertNotNull(res);
     Assert.assertFalse(res.getErrorMsg().isPresent());
     Assert.assertEquals(3, res.getValue().size());
@@ -40,9 +65,26 @@ public class ValueResolverTest {
   }
 
   @Test
-  public void resolveXPathErrorTest()
-  {
-    ResultContainer<Collection<String>> res = ValueResolver.resolveXPath(TestConst.testXml, "//row_name");
+  public void emptyXPathResultTest() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveXPath(TestConst.validTestXml, "//row_name");
+    Assert.assertNotNull(res);
+    Assert.assertTrue(res.getErrorMsg().isPresent());
+    Assert.assertEquals(0, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{}, res.getValue().toArray());
+  }
+
+  @Test
+  public void resolveXPathErrorTest() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveXPath(TestConst.validTestXml, "\\row_name");
+    Assert.assertNotNull(res);
+    Assert.assertTrue(res.getErrorMsg().isPresent());
+    Assert.assertEquals(0, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{}, res.getValue().toArray());
+  }
+
+  @Test
+  public void invalidXMLErrorTest() {
+    ResultContainer<Collection<String>> res = ValueResolver.resolveXPath(TestConst.invalidTestXml, "//row/name");
     Assert.assertNotNull(res);
     Assert.assertTrue(res.getErrorMsg().isPresent());
     Assert.assertEquals(0, res.getValue().size());
