@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: JenkinsCI Jira
+    url: https://issues.jenkins-ci.org
+    about: I prefere GitHub based issues over the Jira based issues, but I check there reularly too.
