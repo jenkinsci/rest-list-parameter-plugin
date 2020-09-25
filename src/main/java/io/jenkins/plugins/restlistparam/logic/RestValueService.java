@@ -27,11 +27,23 @@ public class RestValueService {
   private static final Logger log = Logger.getLogger(RestValueService.class.getName());
   private static final OkHttpClient client = new OkHttpClient();
 
-  private RestValueService()
-  {
+  private RestValueService() {
     throw new IllegalStateException("Static Logic class");
   }
 
+  /**
+   * Returns a {@link ResultContainer} capsuling a optional String error message and a collection of parsed string values.
+   * <br/>
+   * This method uses its parameters to query a REST/Web endpoint to receive a {@link MimeType} response, which then
+   * gets parsed with a supported Path expression to extract a collection of string values.
+   *
+   * @param restEndpoint A http/https web address to the REST/Web endpoint
+   * @param credentials  The credentials required to access said endpoint
+   * @param mimeType     The MIME type of the expected REST/Web response
+   * @param expression   The Json-Path or xPath expression to filter the values
+   * @param filter       additional regex filter on any parsed values
+   * @return A {@link ResultContainer} that capsules either the desired values or a user friendly error message.
+   */
   public static ResultContainer<Collection<String>> get(final String restEndpoint,
                                                         final StandardCredentials credentials,
                                                         final MimeType mimeType,
@@ -57,6 +69,66 @@ public class RestValueService {
     return valueCollection;
   }
 
+  /**
+   * Performs the REST/Web request.
+   *
+   * @param restEndpoint A http/https web address to the REST/Web endpoint
+   * @param credentials  The credentials required to access said endpoint
+   * @param mimeType     The MIME type of the expected REST/Web response
+   * @return A {@link ResultContainer} capsuling either the response body string in the desired {@link MimeType} or an error message
+   */
+  private static ResultContainer<String> getValueStringFromRestEndpoint(final String restEndpoint,
+                                                                        final StandardCredentials credentials,
+                                                                        final MimeType mimeType)
+  {
+    ResultContainer<String> container = new ResultContainer<>(null);
+
+    Request request = new Request.Builder()
+      .url(restEndpoint)
+      .headers(buildHeaders(credentials, mimeType))
+      .build();
+
+    try (Response response = client.newCall(request).execute()) {
+      int statusCode = response.code();
+      if (statusCode < 400) {
+        container.setValue(response.body() != null ? response.body().string() : "");
+      }
+      else if (statusCode < 500) {
+        log.warning(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
+        container.setErrorMsg(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
+      }
+      else {
+        log.warning(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
+        container.setErrorMsg(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
+      }
+    }
+    catch (UnknownHostException ex) {
+      log.warning(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
+      container.setErrorMsg(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
+    }
+    catch (IOException ex) {
+      log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+      container.setErrorMsg(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+      log.fine("Exception Class: " + ex.getClass().getName() + "\n"
+                 + "Exception Message: " + ex.getMessage());
+    }
+
+    return container;
+  }
+
+  /**
+   * Builds the OKHttp Headers that should get applied to the request.
+   * <br/>
+   * Sets a <em>ACCEPT</em> header and optionally a <em>AUTHORIZATION</em> header.
+   * The <em>AUTHORIZATION</em> header gets set to <em>BASIC</em> or <em>BEARER</em> depending on credential type supplied.
+   * <br/>
+   * Currently supported credential types are {@link StandardUsernamePasswordCredentials} for BASIC and
+   * {@link StringCredentials} for BEARER <em>AUTHORIZATION</em>.
+   *
+   * @param credentials null or the credentials to use for the <em>AUTHORIZATION</em> header
+   * @param mimeType    The MIME time that should be set in the <em>ACCEPT</em> header
+   * @return OKHttp headers to be applied to the REST/Web request
+   */
   private static Headers buildHeaders(final StandardCredentials credentials,
                                       final MimeType mimeType)
   {
@@ -88,43 +160,14 @@ public class RestValueService {
     return headBuilder.build();
   }
 
-  private static ResultContainer<String> getValueStringFromRestEndpoint(final String restEndpoint,
-                                                                        final StandardCredentials credentials,
-                                                                        final MimeType mimeType)
-  {
-    ResultContainer<String> container = new ResultContainer<>(null);
-
-    Request request = new Request.Builder()
-      .url(restEndpoint)
-      .headers(buildHeaders(credentials, mimeType))
-      .build();
-
-    try (Response response = client.newCall(request).execute()) {
-      int statusCode = response.code();
-      if (statusCode < 400) {
-        container.setValue(response.body() != null ? response.body().string() : "");
-      }
-      else if (statusCode < 500) {
-        log.warning(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
-        container.setErrorMsg(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
-      }
-      else {
-        log.warning(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
-        container.setErrorMsg(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
-      }
-    } catch (UnknownHostException ex) {
-      log.warning(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
-      container.setErrorMsg(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
-    } catch (IOException ex) {
-      log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
-      container.setErrorMsg(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
-      log.fine("Exception Class: " + ex.getClass().getName() + "\n"
-                 + "Exception Message: " + ex.getMessage());
-    }
-
-    return container;
-  }
-
+  /**
+   * Converts a {@code valueString} of a given {@link MimeType} to a string collection based on the values parsed from the expression
+   *
+   * @param mimeType    The {@link MimeType} of the {@code valueString}
+   * @param valueString The value string to be parsed
+   * @param expression  The Json-Path or xPath expression to apply on the {@code valueString}
+   * @return A {@link ResultContainer} capsuling the results of the applied expression or an error message
+   */
   private static ResultContainer<Collection<String>> convertToValuesCollection(final MimeType mimeType,
                                                                                final String valueString,
                                                                                final String expression)
@@ -145,8 +188,15 @@ public class RestValueService {
     return container;
   }
 
-  private static Collection<String> filterValues(Collection<String> values,
-                                                 String filter)
+  /**
+   * Apply a simple regex filter on a collection of strings
+   *
+   * @param values The collection of string values
+   * @param filter The regex expression string
+   * @return A filtered string collection based on the result of the applied regex filter
+   */
+  private static Collection<String> filterValues(final Collection<String> values,
+                                                 final String filter)
   {
     return values.stream()
                  .filter(value -> value.matches(filter))

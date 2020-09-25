@@ -27,11 +27,17 @@ import java.util.logging.Logger;
 public class ValueResolver {
   private static final Logger log = Logger.getLogger(ValueResolver.class.getName());
 
-  private ValueResolver()
-  {
+  private ValueResolver() {
     throw new IllegalStateException("Static Logic class");
   }
 
+  /**
+   * Parses a {@code xmlStr}, applies a xPath {@code expression} and returns a collection of strings based on the result
+   *
+   * @param xmlStr     The XML text as string
+   * @param expression The xPath expression
+   * @return A {@link ResultContainer} capsuling either a collection of strings or a user friendly error message
+   */
   public static ResultContainer<Collection<String>> resolveXPath(final String xmlStr,
                                                                  final String expression)
   {
@@ -74,6 +80,29 @@ public class ValueResolver {
     return container;
   }
 
+  /**
+   * A helper method to convert a XML {@link NodeList} to a collection of strings
+   *
+   * @param nodeList The {@link NodeList} to convert
+   * @return A collection of strings converted from the {@code nodeList} (can be empty if {@code nodeList} is empty)
+   */
+  private static Collection<String> xmlNodeListToCollection(NodeList nodeList) {
+    Collection<String> res = new ArrayList<>(nodeList.getLength());
+
+    for (int i = 0; i < nodeList.getLength(); ++i) {
+      res.add(nodeList.item(i).getTextContent());
+    }
+
+    return res;
+  }
+
+  /**
+   * Parses a {@code jsonStr}, applies a Json-Path {@code expression} and returns a collection of strings based on the result
+   *
+   * @param jsonStr    The Json text as string
+   * @param expression The Json-Path expression
+   * @return A {@link ResultContainer} capsuling either a collection of strings or a user friendly error message
+   */
   public static ResultContainer<Collection<String>> resolveJsonPath(final String jsonStr,
                                                                     final String expression)
   {
@@ -110,16 +139,14 @@ public class ValueResolver {
     return container;
   }
 
-  private static Collection<String> xmlNodeListToCollection(NodeList nodeList) {
-    Collection<String> res = new ArrayList<>(nodeList.getLength());
-
-    for (int i = 0; i < nodeList.getLength(); ++i) {
-      res.add(nodeList.item(i).getTextContent());
-    }
-
-    return res;
-  }
-
+  /**
+   * A helper method to generate user friendly debug messages (Log level {@code finer})
+   *
+   * @param errorMsg    The error message itself
+   * @param expression  The Json-Path or xPath expression used
+   * @param valueString The Json or XML string used
+   * @return A beautified string ready for the debug log
+   */
   private static String buildFineLogMsg(String errorMsg,
                                         String expression,
                                         String valueString)
