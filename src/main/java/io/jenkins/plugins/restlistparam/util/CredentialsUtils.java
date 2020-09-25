@@ -67,13 +67,13 @@ public class CredentialsUtils {
     if (StringUtils.isBlank(credentialsId)) {
       return Optional.empty();
     }
-    final List<StandardCredentials> lookupCredentials =
+    List<StandardCredentials> lookupCredentials =
       CredentialsProvider.lookupCredentials(
         StandardCredentials.class,
         (Item) null,
         ACL.SYSTEM,
         Collections.emptyList());
-    final CredentialsMatcher allOf = CredentialsMatchers.allOf(
+    CredentialsMatcher allOf = CredentialsMatchers.allOf(
       CredentialsMatchers.withId(credentialsId),
       CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class),
                                 CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class)));

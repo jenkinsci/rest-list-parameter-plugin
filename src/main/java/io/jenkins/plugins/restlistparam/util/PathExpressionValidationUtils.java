@@ -3,6 +3,7 @@ package io.jenkins.plugins.restlistparam.util;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import hudson.util.FormValidation;
+import io.jenkins.plugins.restlistparam.Messages;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
@@ -21,7 +22,7 @@ public class PathExpressionValidationUtils {
       xpath.compile(expression);
       return FormValidation.ok();
     } catch (XPathExpressionException ignore) {
-      return FormValidation.error("The provided xPath expression seems to be incorrect");
+      return FormValidation.error(Messages.RLP_PathExpressionValidationUtil_FormErr_xPath());
     }
   }
 
@@ -31,7 +32,7 @@ public class PathExpressionValidationUtils {
       return FormValidation.ok();
     }
     catch (InvalidPathException ignore) {
-      return FormValidation.error("The provided Json-Path expression seems to be incorrect");
+      return FormValidation.error(Messages.RLP_PathExpressionValidationUtil_FormErr_jPath());
     }
   }
 }
