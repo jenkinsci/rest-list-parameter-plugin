@@ -121,7 +121,9 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
   @Override
   public ParameterValue createValue(String value) {
-    return new RestListParameterValue(getName(), value, getDescription());
+    RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
+    checkValue(parameterValue);
+    return parameterValue;
   }
 
   @Override
@@ -129,7 +131,19 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   public ParameterValue createValue(StaplerRequest req,
                                     JSONObject jo)
   {
-    return req.bindJSON(RestListParameterValue.class, jo);
+    RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
+    checkValue(value);
+    return value;
+  }
+
+  private void checkValue(RestListParameterValue value) {
+    if (!isValid(value)) {
+      throw new IllegalArgumentException("Illegal value for parameter " + getName() + ": " + value.getValue());
+    }
+  }
+
+  public boolean isValid(ParameterValue value) {
+    return values.contains(((RestListParameterValue) value).getValue());
   }
 
   @Symbol({"RESTList", "RestList", "RESTListParam"})
