@@ -47,20 +47,17 @@ public class RestListParameterValue extends ParameterValue {
   }
 
   @Override
-  public VariableResolver<String> createVariableResolver(AbstractBuild<?, ?> build)
-  {
+  public VariableResolver<String> createVariableResolver(AbstractBuild<?, ?> build) {
     return name -> RestListParameterValue.this.name.equals(name) ? value : null;
   }
 
   @Override
-  public String getValue()
-  {
+  public String getValue() {
     return value;
   }
 
   @Override
-  public int hashCode()
-  {
+  public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
     result = prime * result + ((value == null) ? 0 : value.hashCode());
@@ -68,8 +65,7 @@ public class RestListParameterValue extends ParameterValue {
   }
 
   @Override
-  public boolean equals(Object obj)
-  {
+  public boolean equals(Object obj) {
     if (this == obj) {
       return true;
     }
@@ -90,14 +86,12 @@ public class RestListParameterValue extends ParameterValue {
   }
 
   @Override
-  public String toString()
-  {
+  public String toString() {
     return "(RestListParameterValue) " + getName() + "='" + value + "'";
   }
 
   @Override
-  public String getShortDescription()
-  {
+  public String getShortDescription() {
     return name + '=' + value;
   }
 }
