@@ -3,9 +3,9 @@
 :toc: macro
 :toc-title:
 
-image:https://img.shields.io/github/workflow/status/h1dden-da3m0n/rest-list-parameter-plugin/Build%20and%20Test%20Plugin[GitHub Workflow Status]
-image:https://img.shields.io/github/license/h1dden-da3m0n/rest-list-parameter-plugin?color=green[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/blob/main/LICENSE"]
-image:https://img.shields.io/maintenance/yes/2020[Maintenance]
+image:https://img.shields.io/github/workflow/status/h1dden-da3m0n/rest-list-parameter-plugin/Build%20and%20Test%20Plugin.svg[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/actions"]
+image:https://img.shields.io/github/license/h1dden-da3m0n/rest-list-parameter-plugin.svg?color=green[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/blob/main/LICENSE"]
+image:https://img.shields.io/maintenance/yes/2020.svg[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin"]
 image:https://img.shields.io/github/contributors/h1dden-da3m0n/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/graphs/contributors"]
 image:https://img.shields.io/jenkins/plugin/i/rest-list-parameter.svg?color=blue&label=installations[link="https://plugins.jenkins.io/rest-list-parameter"]
 image:https://img.shields.io/github/release/h1dden-da3m0n/rest-list-parameter-plugin.svg?label=changelog[link="https://github.com/jenkinsci/rest-list-parameter-plugin/releases/latest"]
