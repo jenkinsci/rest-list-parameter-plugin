@@ -16,10 +16,7 @@ import io.jenkins.plugins.restlistparam.util.PathExpressionValidationUtils;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.AncestorInPath;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.*;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -34,12 +31,22 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private final String credentialId;
   private final MimeType mimeType;
   private final String valueExpression;
-  private final String filter;
-  private final String defaultValue;
+  private String filter;
+  private String defaultValue;
   private String errorMsg = "";
   private Collection<String> values = Collections.emptyList();
 
   @DataBoundConstructor
+  public RestListParameterDefinition(String name,
+                                     String description,
+                                     String restEndpoint,
+                                     String credentialId,
+                                     MimeType mimeType,
+                                     String valueExpression)
+  {
+    this(name, description, restEndpoint, credentialId, mimeType, valueExpression, ".*", "");
+  }
+
   public RestListParameterDefinition(String name,
                                      String description,
                                      String restEndpoint,
@@ -78,8 +85,18 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     return filter;
   }
 
+  @DataBoundSetter
+  public void setFilter(String filter) {
+    this.filter = filter;
+  }
+
   public String getDefaultValue() {
     return defaultValue;
+  }
+
+  @DataBoundSetter
+  public void setDefaultValue(String defaultValue) {
+    this.defaultValue = defaultValue;
   }
 
   void setErrorMsg(String errorMsg) {
