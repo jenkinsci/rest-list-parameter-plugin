@@ -177,9 +177,9 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
         if (value.matches("^http(s)?://.+")) {
           return FormValidation.ok();
         }
-        return FormValidation.error("Rest Endpoint is no URL format (http:// or https://)");
+        return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointUrl());
       }
-      return FormValidation.error("Rest Endpoint must not be empty");
+      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
     }
 
     public FormValidation doCheckCredentialId(@QueryParameter final String value) {
@@ -196,10 +196,10 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
           case APPLICATION_XML:
             return PathExpressionValidationUtils.doCheckXPathExpression(value);
           default:
-            return FormValidation.error("Unknown MimeType");
+            return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_UnknownMime());
         }
       }
-      return FormValidation.error("Value Expression must not be empty");
+      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
     }
 
     public ListBoxModel doFillCredentialIdItems(@AncestorInPath final Item context,
