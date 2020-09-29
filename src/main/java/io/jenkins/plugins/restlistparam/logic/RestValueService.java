@@ -151,7 +151,7 @@ public class RestValueService {
         authTypeAndCredential = "Bearer" + cred.getSecret().getPlainText();
       }
       else {
-        log.warning("Attempted to use unknown Credential type: " + credentials.getClass().getName());
+        log.warning(Messages.RLP_RestValueService_warn_UnsupportedCredential(credentials.getClass().getName()));
       }
 
       headBuilder.add(HTTPHeaders.AUTHORIZATION, authTypeAndCredential);
