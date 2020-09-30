@@ -1,5 +1,6 @@
 package io.jenkins.plugins.restlistparam;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.Extension;
 import hudson.model.Item;
@@ -13,10 +14,12 @@ import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.util.CredentialsUtils;
 import io.jenkins.plugins.restlistparam.util.PathExpressionValidationUtils;
+import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.*;
+import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
@@ -172,7 +175,17 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       return Messages.RLP_DescriptorImpl_DisplayName();
     }
 
-    public FormValidation doCheckRestEndpoint(@QueryParameter final String value) {
+    @POST
+    public FormValidation doCheckRestEndpoint(@QueryParameter final String value,
+                                              @AncestorInPath final Item item)
+    {
+      if (item == null) {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+      }
+      else {
+        item.checkPermission(Item.CONFIGURE);
+      }
+
       if (StringUtils.isNotBlank(value)) {
         if (value.matches("^http(s)?://.+")) {
           return FormValidation.ok();
@@ -182,13 +195,18 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
     }
 
-    public FormValidation doCheckCredentialId(@QueryParameter final String value) {
-      return CredentialsUtils.doCheckFillCredentialsId(value);
-    }
-
+    @POST
     public FormValidation doCheckValueExpression(@QueryParameter final String value,
-                                                 @QueryParameter final MimeType mimeType)
+                                                 @QueryParameter final MimeType mimeType,
+                                                 @AncestorInPath final Item item)
     {
+      if (item == null) {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+      }
+      else {
+        item.checkPermission(Item.CONFIGURE);
+      }
+
       if (StringUtils.isNotBlank(value)) {
         switch (mimeType) {
           case APPLICATION_JSON:
@@ -208,7 +226,22 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       return CredentialsUtils.doFillCredentialsIdItems(context, credentialId);
     }
 
-    public FormValidation doCheckCredentialIdItems(@QueryParameter final String value) {
+    public FormValidation doCheckCredentialId(@QueryParameter final String value,
+                                              @AncestorInPath final Item item)
+    {
+      if (item == null) {
+        if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+          return FormValidation.ok();
+        }
+      }
+      else {
+        if (!item.hasPermission(Item.EXTENDED_READ)
+          && !item.hasPermission(CredentialsProvider.USE_ITEM))
+        {
+          return FormValidation.ok();
+        }
+      }
+
       return CredentialsUtils.doCheckFillCredentialsId(value);
     }
   }
