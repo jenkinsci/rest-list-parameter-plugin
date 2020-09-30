@@ -6,7 +6,7 @@ updates:
       interval: "weekly"
       day: "wednesday"
       time: "10:00"
-    reviewers:
+    assignees:
       - "h1dden-da3m0n"
     ignore:
       - dependency-name: "org.jenkins-ci.main:jenkins-core"
@@ -17,5 +17,5 @@ updates:
       interval: "weekly"
       day: "wednesday"
       time: "10:00"
-    reviewers:
+    assignees:
       - "h1dden-da3m0n"
