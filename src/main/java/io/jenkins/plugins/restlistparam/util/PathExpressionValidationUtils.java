@@ -17,11 +17,11 @@ public class PathExpressionValidationUtils {
 
   public static FormValidation doCheckXPathExpression(final String expression) {
     try {
-      XPathFactory factory = XPathFactory.newInstance();
-      XPath xpath = factory.newXPath();
+      XPath xpath = XPathFactory.newInstance().newXPath();
       xpath.compile(expression);
       return FormValidation.ok();
-    } catch (XPathExpressionException ignore) {
+    }
+    catch (XPathExpressionException | NullPointerException ignore) {
       return FormValidation.error(Messages.RLP_PathExpressionValidationUtil_FormErr_xPath());
     }
   }

@@ -34,10 +34,10 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private final String credentialId;
   private final MimeType mimeType;
   private final String valueExpression;
-  private String filter;
   private String defaultValue;
-  private String errorMsg = "";
-  private Collection<String> values = Collections.emptyList();
+  private String filter;
+  private String errorMsg;
+  private Collection<String> values;
 
   @DataBoundConstructor
   public RestListParameterDefinition(String name,
@@ -66,6 +66,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
     this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
     this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
+    this.errorMsg = "";
+    this.values = Collections.emptyList();
   }
 
   public String getRestEndpoint() {
@@ -177,13 +179,13 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
     @POST
     public FormValidation doCheckRestEndpoint(@QueryParameter final String value,
-                                              @AncestorInPath final Item item)
+                                              @AncestorInPath final Item context)
     {
-      if (item == null) {
+      if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
       }
       else {
-        item.checkPermission(Item.CONFIGURE);
+        context.checkPermission(Item.CONFIGURE);
       }
 
       if (StringUtils.isNotBlank(value)) {
@@ -198,13 +200,13 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     @POST
     public FormValidation doCheckValueExpression(@QueryParameter final String value,
                                                  @QueryParameter final MimeType mimeType,
-                                                 @AncestorInPath final Item item)
+                                                 @AncestorInPath final Item context)
     {
-      if (item == null) {
+      if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
       }
       else {
-        item.checkPermission(Item.CONFIGURE);
+        context.checkPermission(Item.CONFIGURE);
       }
 
       if (StringUtils.isNotBlank(value)) {
@@ -227,16 +229,16 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     }
 
     public FormValidation doCheckCredentialId(@QueryParameter final String value,
-                                              @AncestorInPath final Item item)
+                                              @AncestorInPath final Item context)
     {
-      if (item == null) {
+      if (context == null) {
         if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
           return FormValidation.ok();
         }
       }
       else {
-        if (!item.hasPermission(Item.EXTENDED_READ)
-          && !item.hasPermission(CredentialsProvider.USE_ITEM))
+        if (!context.hasPermission(Item.EXTENDED_READ)
+          && !context.hasPermission(CredentialsProvider.USE_ITEM))
         {
           return FormValidation.ok();
         }
