@@ -48,8 +48,9 @@ public class CredentialsUtils {
         context,
         StandardCredentials.class,
         Collections.emptyList(),
-        CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class),
-                                  CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class)))
+        CredentialsMatchers.anyOf(
+          CredentialsMatchers.instanceOf(StringCredentials.class),
+          CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class)))
       .includeCurrentValue(credentialsId);
   }
 
@@ -70,16 +71,16 @@ public class CredentialsUtils {
     if (StringUtils.isBlank(credentialsId)) {
       return Optional.empty();
     }
-    List<StandardCredentials> lookupCredentials =
-      CredentialsProvider.lookupCredentials(
-        StandardCredentials.class,
-        (Item) null,
-        ACL.SYSTEM,
-        Collections.emptyList());
+    List<StandardCredentials> lookupCredentials = CredentialsProvider.lookupCredentials(
+      StandardCredentials.class,
+      (Item) null,
+      ACL.SYSTEM,
+      Collections.emptyList());
     CredentialsMatcher allOf = CredentialsMatchers.allOf(
       CredentialsMatchers.withId(credentialsId),
-      CredentialsMatchers.anyOf(CredentialsMatchers.instanceOf(StringCredentials.class),
-                                CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class)));
+      CredentialsMatchers.anyOf(
+        CredentialsMatchers.instanceOf(StringCredentials.class),
+        CredentialsMatchers.instanceOf(StandardUsernamePasswordCredentials.class)));
     return Optional.ofNullable(CredentialsMatchers.firstOrNull(lookupCredentials, allOf));
   }
 }

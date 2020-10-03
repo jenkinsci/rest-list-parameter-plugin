@@ -81,7 +81,7 @@ public class RestValueService {
                                                                         final StandardCredentials credentials,
                                                                         final MimeType mimeType)
   {
-    ResultContainer<String> container = new ResultContainer<>(null);
+    ResultContainer<String> container = new ResultContainer<>("");
 
     Request request = new Request.Builder()
       .url(restEndpoint)
@@ -139,14 +139,14 @@ public class RestValueService {
       String authTypeAndCredential = "";
 
       if (credentials instanceof StandardUsernamePasswordCredentials) {
-        log.fine("Using Basic auth type to request REST-Values");
+        log.fine(Messages.RLP_RestValueService_fine_UsingBasicAuth());
         StandardUsernamePasswordCredentials cred = (StandardUsernamePasswordCredentials) credentials;
         String uNameAndPasswd = cred.getUsername() + ":" + cred.getPassword().getPlainText();
         authTypeAndCredential = "Basic" + Base64.getEncoder()
                                                 .encodeToString(uNameAndPasswd.getBytes(StandardCharsets.UTF_8));
       }
       else if (credentials instanceof StringCredentials) {
-        log.fine("Using Bearer auth type to request REST-Values");
+        log.fine(Messages.RLP_RestValueService_fine_UsingBearerAuth());
         StringCredentials cred = (StringCredentials) credentials;
         authTypeAndCredential = "Bearer" + cred.getSecret().getPlainText();
       }

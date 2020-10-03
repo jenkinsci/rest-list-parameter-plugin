@@ -40,24 +40,24 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private Collection<String> values;
 
   @DataBoundConstructor
-  public RestListParameterDefinition(String name,
-                                     String description,
-                                     String restEndpoint,
-                                     String credentialId,
-                                     MimeType mimeType,
-                                     String valueExpression)
+  public RestListParameterDefinition(final String name,
+                                     final String description,
+                                     final String restEndpoint,
+                                     final String credentialId,
+                                     final MimeType mimeType,
+                                     final String valueExpression)
   {
     this(name, description, restEndpoint, credentialId, mimeType, valueExpression, ".*", "");
   }
 
-  public RestListParameterDefinition(String name,
-                                     String description,
-                                     String restEndpoint,
-                                     String credentialId,
-                                     MimeType mimeType,
-                                     String valueExpression,
-                                     String filter,
-                                     String defaultValue)
+  public RestListParameterDefinition(final String name,
+                                     final String description,
+                                     final String restEndpoint,
+                                     final String credentialId,
+                                     final MimeType mimeType,
+                                     final String valueExpression,
+                                     final String filter,
+                                     final String defaultValue)
   {
     super(name, description);
     this.restEndpoint = restEndpoint;
@@ -91,7 +91,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   }
 
   @DataBoundSetter
-  public void setFilter(String filter) {
+  public void setFilter(final String filter) {
     this.filter = filter;
   }
 
@@ -100,11 +100,11 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   }
 
   @DataBoundSetter
-  public void setDefaultValue(String defaultValue) {
+  public void setDefaultValue(final String defaultValue) {
     this.defaultValue = defaultValue;
   }
 
-  void setErrorMsg(String errorMsg) {
+  void setErrorMsg(final String errorMsg) {
     this.errorMsg = errorMsg;
   }
 
@@ -116,11 +116,12 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     if (values == null || values.isEmpty()) {
       Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
 
-      ResultContainer<Collection<String>> container = RestValueService.get(restEndpoint,
-                                                                           credentials.orElse(null),
-                                                                           mimeType,
-                                                                           valueExpression,
-                                                                           filter);
+      ResultContainer<Collection<String>> container = RestValueService.get(
+        restEndpoint,
+        credentials.orElse(null),
+        mimeType,
+        valueExpression,
+        filter);
 
       setErrorMsg(container.getErrorMsg().orElse(""));
       values = container.getValue();
@@ -129,7 +130,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   }
 
   @Override
-  public ParameterDefinition copyWithDefaultValue(ParameterValue defaultValue) {
+  public ParameterDefinition copyWithDefaultValue(final ParameterValue defaultValue) {
     if (defaultValue instanceof RestListParameterValue) {
       RestListParameterValue value = (RestListParameterValue) defaultValue;
       return new RestListParameterDefinition(
@@ -142,7 +143,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   }
 
   @Override
-  public ParameterValue createValue(String value) {
+  public ParameterValue createValue(final String value) {
     RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
     checkValue(parameterValue);
     return parameterValue;
@@ -150,17 +151,17 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
   @Override
   @CheckForNull
-  public ParameterValue createValue(StaplerRequest req,
-                                    JSONObject jo)
+  public ParameterValue createValue(final StaplerRequest req,
+                                    final JSONObject jo)
   {
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
     checkValue(value);
     return value;
   }
 
-  private void checkValue(RestListParameterValue value) {
+  private void checkValue(final RestListParameterValue value) {
     if (!isValid(value)) {
-      throw new IllegalArgumentException("Illegal value for parameter " + getName() + ": " + value.getValue());
+      throw new IllegalArgumentException(Messages.RLP_Definition_ValueException(getName(), value.getValue()));
     }
   }
 
