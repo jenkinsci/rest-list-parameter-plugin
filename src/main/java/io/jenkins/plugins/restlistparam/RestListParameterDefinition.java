@@ -244,7 +244,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
         }
       }
 
-      return CredentialsUtils.doCheckFillCredentialsId(value);
+      return CredentialsUtils.doCheckCredentialsId(value);
     }
   }
 }

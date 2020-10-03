@@ -53,15 +53,15 @@ public class CredentialsUtils {
       .includeCurrentValue(credentialsId);
   }
 
-  public static FormValidation doCheckFillCredentialsId(final String credentialsId) {
+  public static FormValidation doCheckCredentialsId(final String credentialsId) {
     if (StringUtils.isBlank(credentialsId)) {
       return FormValidation.ok();
     }
     if (credentialsId.startsWith("${") && credentialsId.endsWith("}")) {
-      return FormValidation.warning(Messages.RLP_CredentialsUtils_warn_ExpressionBased());
+      return FormValidation.warning(Messages.RLP_CredentialsUtils_ValidationWrn_ExpressionBased());
     }
     if (!findCredentials(credentialsId).isPresent()) {
-      return FormValidation.error(Messages.RLP_CredentialsUtils_error_CannotFind());
+      return FormValidation.error(Messages.RLP_CredentialsUtils_ValidationErr_CannotFind());
     }
     return FormValidation.ok();
   }
