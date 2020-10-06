@@ -54,7 +54,17 @@ public class CredentialsUtils {
       .includeCurrentValue(credentialsId);
   }
 
-  public static FormValidation doCheckCredentialsId(final String credentialsId) {
+  public static FormValidation doCheckCredentialsId(final Item context,
+                                                    final String credentialsId)
+  {
+    if ((context == null && !Jenkins.get().hasPermission(Jenkins.ADMINISTER))
+      || (context != null
+      && !context.hasPermission(Item.EXTENDED_READ)
+      && !context.hasPermission(CredentialsProvider.USE_ITEM)))
+    {
+      return FormValidation.ok();
+    }
+
     if (StringUtils.isBlank(credentialsId)) {
       return FormValidation.ok();
     }

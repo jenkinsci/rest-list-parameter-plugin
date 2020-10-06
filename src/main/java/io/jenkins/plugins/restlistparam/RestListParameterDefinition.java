@@ -1,6 +1,5 @@
 package io.jenkins.plugins.restlistparam;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.Extension;
 import hudson.model.Item;
@@ -179,8 +178,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     }
 
     @POST
-    public FormValidation doCheckRestEndpoint(@QueryParameter final String value,
-                                              @AncestorInPath final Item context)
+    public FormValidation doCheckRestEndpoint(@AncestorInPath final Item context,
+                                              @QueryParameter final String value)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -199,9 +198,9 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     }
 
     @POST
-    public FormValidation doCheckValueExpression(@QueryParameter final String value,
-                                                 @QueryParameter final MimeType mimeType,
-                                                 @AncestorInPath final Item context)
+    public FormValidation doCheckValueExpression(@AncestorInPath final Item context,
+                                                 @QueryParameter final String value,
+                                                 @QueryParameter final MimeType mimeType)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -229,23 +228,10 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       return CredentialsUtils.doFillCredentialsIdItems(context, credentialId);
     }
 
-    public FormValidation doCheckCredentialId(@QueryParameter final String value,
-                                              @AncestorInPath final Item context)
+    public FormValidation doCheckCredentialId(@AncestorInPath final Item context,
+                                              @QueryParameter final String value)
     {
-      if (context == null) {
-        if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
-          return FormValidation.ok();
-        }
-      }
-      else {
-        if (!context.hasPermission(Item.EXTENDED_READ)
-          && !context.hasPermission(CredentialsProvider.USE_ITEM))
-        {
-          return FormValidation.ok();
-        }
-      }
-
-      return CredentialsUtils.doCheckCredentialsId(value);
+      return CredentialsUtils.doCheckCredentialsId(context, value);
     }
   }
 }
