@@ -70,6 +70,75 @@ Depending on the authentication requirement for the REST/Web endpoint there are 
 
 NOTE: The Authentication header will be build and added based on the type of the selected credential type.
 
+[#pipeline-parameter]
+=== Definition in Pipeline
+
+[source,goovy]
+----
+pipeline {
+  agent any
+  parameters {
+    RESTList(
+      name: 'REST_VALUE',
+      description: '',
+      restEndpoint: 'http://test.lan',
+      credentialId: '',
+      mimeType: 'APPLICATION_JSON',
+      valueExpression: '$.*',
+      defaultValue: '', // optional
+      filter: '.*' // optional
+    )
+  }
+
+  stages {
+    stage('Test') {
+      steps {
+        println env.REST_VALUE
+      }
+    }
+  }
+}
+----
+
+[#jobdsl-parameter]
+=== Definition in JobDsl
+
+[source,goovy]
+----
+pipelineJob('DemoJob') {
+  parameters {
+    RESTList {
+      name('REST_VALUE')
+      description('TEST')
+      restEndpoint('http://test.lan')
+      credentialId('credID')
+      mimeType('APPLICATION_JSON')
+      valueExpression('$.*')
+      defaultValue('') // optional
+      filter('.*') // optional
+    }
+  }
+  definition {
+    cps {
+      script("""
+        pipeline {
+            agent any
+
+            stages {
+                stage('Test') {
+                    steps {
+                        println env.REST_VALUE
+                    }
+                }
+            }
+        }
+      """)
+      sandbox()
+    }
+  }
+}
+----
+
 [#contributing]
 == Contributing
 
