@@ -22,7 +22,7 @@ toc::[]
 [#changelog]
 == Changelog
 
-Release notes can be found in the link:https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/releases[GitHub Releases]
+Release notes can be found in the link:https://github.com/jenkinsci/rest-list-parameter-plugin/releases[GitHub Releases]
 
 [#features]
 == Features
