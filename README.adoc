@@ -145,6 +145,8 @@ pipelineJob('DemoJob') {
 I welcome all contributions and pull requests!
 If you have a larger feature in mind please open an issue, so we can discuss the implementation before you start.
 
+NOTE: I prefer GitHub Issues over Jira Issues, but I check both regularly.
+
 For further contributing info please have a look at the JenkinsCI link:https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
 
 [#development]
