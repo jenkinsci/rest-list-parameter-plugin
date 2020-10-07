@@ -33,7 +33,7 @@ public class RestValueService {
 
   /**
    * Returns a {@link ResultContainer} capsuling a optional String error message and a collection of parsed string values.
-   * <br/>
+   *
    * This method uses its parameters to query a REST/Web endpoint to receive a {@link MimeType} response, which then
    * gets parsed with a supported Path expression to extract a collection of string values.
    *
@@ -118,10 +118,10 @@ public class RestValueService {
 
   /**
    * Builds the OKHttp Headers that should get applied to the request.
-   * <br/>
+   *
    * Sets a <em>ACCEPT</em> header and optionally a <em>AUTHORIZATION</em> header.
    * The <em>AUTHORIZATION</em> header gets set to <em>BASIC</em> or <em>BEARER</em> depending on credential type supplied.
-   * <br/>
+   *
    * Currently supported credential types are {@link StandardUsernamePasswordCredentials} for BASIC and
    * {@link StringCredentials} for BEARER <em>AUTHORIZATION</em>.
    *
