@@ -3,12 +3,12 @@
 :toc: macro
 :toc-title:
 
-image:https://img.shields.io/github/workflow/status/h1dden-da3m0n/rest-list-parameter-plugin/CodeQL.svg[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/actions"]
-image:https://img.shields.io/github/license/h1dden-da3m0n/rest-list-parameter-plugin.svg?color=green[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/blob/main/LICENSE"]
-image:https://img.shields.io/maintenance/yes/2020.svg[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin"]
-image:https://img.shields.io/github/contributors/h1dden-da3m0n/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/graphs/contributors"]
+image:https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/1/badge/icon[link="https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/"]
+image:https://img.shields.io/github/license/jenkinsci/rest-list-parameter-plugin.svg?color=green[link="https://github.com/jenkinsci/rest-list-parameter-plugin/blob/main/LICENSE"]
+image:https://img.shields.io/maintenance/yes/2020.svg[link="https://github.com/jenkinsci/rest-list-parameter-plugin"]
+image:https://img.shields.io/github/contributors/jenkinsci/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/jenkinsci/rest-list-parameter-plugin/graphs/contributors"]
 image:https://img.shields.io/jenkins/plugin/i/rest-list-parameter.svg?color=blue&label=installations[link="https://plugins.jenkins.io/rest-list-parameter"]
-image:https://img.shields.io/github/release/h1dden-da3m0n/rest-list-parameter-plugin.svg?label=changelog[link="https://github.com/jenkinsci/rest-list-parameter-plugin/releases/latest"]
+image:https://img.shields.io/github/release/jenkinsci/rest-list-parameter-plugin.svg?label=changelog[link="https://github.com/jenkinsci/rest-list-parameter-plugin/releases/latest"]
 
 [#introduction]
 == Introduction
@@ -22,7 +22,7 @@ toc::[]
 [#changelog]
 == Changelog
 
-Release notes can be found in the link:https://github.com/h1dden-da3m0n/rest-list-parameter-plugin/releases[GitHub Releases]
+Release notes can be found in the link:https://github.com/jenkinsci/rest-list-parameter-plugin/releases[GitHub Releases]
 
 [#features]
 == Features
@@ -37,14 +37,14 @@ Release notes can be found in the link:https://github.com/h1dden-da3m0n/rest-lis
 [#configuration]
 == Configuration
 
-image::.media/parameter.png[Parameter configuration (Advanced collapsed)]
-image::.media/parameter-full.png[Parameter configuration (Advanced expanded)]
-image::.media/build.png[Demo Build (+ showcasing error messaging)]
+image::media/parameter.png[Parameter configuration (Advanced collapsed)]
+image::media/parameter-full.png[Parameter configuration (Advanced expanded)]
+image::media/build.png[Demo Build (+ showcasing error messaging)]
 
 [#jsonPath-configuration]
 === Json-Path configuration
 
-image::.media/json-path.png[Demo config for Json-Path]
+image::media/json-path.png[Demo config for Json-Path]
 
 If you expect the response of the specified endpoint to produce a Json response and need to utilize Json-Path, then you have to set the MIME type to _APPLICATION_JSON_ (this will also send this MIME as `ACCEPT` header) and provide the desired Json-Path in the _Value Expression_ field.
 
@@ -53,7 +53,7 @@ The result of such a configuration will be the application of the Json-Path on t
 [#xPath-configuration]
 === xPath configuration
 
-image::.media/xPath.png[Demo config for xPath]
+image::media/xPath.png[Demo config for xPath]
 
 If you expect the response of the specified endpoint to produce an XML response and need to utilize xPath, then you have to set the MIME type to _APPLICATION_XML_ (this will also send this MIME as `ACCEPT` header) and provide the desired xPath in the _Value Expression_ field.
 
@@ -145,6 +145,8 @@ pipelineJob('DemoJob') {
 I welcome all contributions and pull requests!
 If you have a larger feature in mind please open an issue, so we can discuss the implementation before you start.
 
+NOTE: I prefer GitHub Issues over Jira Issues, but I check both regularly.
+
 For further contributing info please have a look at the JenkinsCI link:https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
 
 [#development]
@@ -152,8 +154,8 @@ For further contributing info please have a look at the JenkinsCI link:https://g
 
 === Requirements
 
-* Java 8 and newer
-* Maven 3 and newer
+* Java 8 or newer
+* Maven 3 or newer
 * (optional) a test Jenkins instance to deploy the plugin SNAPSHOT to for testing
 
 === Build
