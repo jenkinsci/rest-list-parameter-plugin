@@ -154,8 +154,8 @@ For further contributing info please have a look at the JenkinsCI link:https://g
 
 === Requirements
 
-* Java 8 and newer
-* Maven 3 and newer
+* Java 8 or newer
+* Maven 3 or newer
 * (optional) a test Jenkins instance to deploy the plugin SNAPSHOT to for testing
 
 === Build
