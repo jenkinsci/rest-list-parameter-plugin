@@ -47,7 +47,6 @@
     </developer>
   </developers>
 
-  <!-- Assuming you want to host on @jenkinsci:
   <issueManagement>
     <system>GitHub</system>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
@@ -58,19 +57,6 @@
       <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
       <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
       <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-  </scm>
-  -->
-  <issueManagement>
-    <system>GitHub</system>
-    <url>https://github.com/h1dden-da3m0n/${project.artifactId}-plugin</url>
-  </issueManagement>
-
-  <url>https://github.com/h1dden-da3m0n/${project.artifactId}-plugin</url>
-  <scm>
-    <connection>scm:git:git://github.com/h1dden-da3m0n/${project.artifactId}-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:h1dden-da3m0n/${project.artifactId}-plugin.git</developerConnection>
-    <url>https://github.com/h1dden-da3m0n/${project.artifactId}/tree/${project.artifactId}-${revision}</url>
-    <tag>${scmTag}</tag>
   </scm>
 
   <dependencyManagement>
