@@ -8,7 +8,7 @@ image:https://img.shields.io/github/contributors/jenkinsci/rest-list-parameter-p
 image:https://img.shields.io/jenkins/plugin/i/rest-list-parameter.svg?color=blue&label=installations[link="https://plugins.jenkins.io/rest-list-parameter"]
 image:https://img.shields.io/github/release/jenkinsci/rest-list-parameter-plugin.svg?label=changelog[link="https://github.com/jenkinsci/rest-list-parameter-plugin/releases/latest"]
 
-[#introduction]
+[[introduction]]
 == Introduction
 
 This Plugin provides parameter type that can request a REST endpoint and offer a list of values parsed from the response value at build start time.
@@ -17,12 +17,12 @@ If the REST endpoint requires authentication, then either Basic or Bearer authen
 
 toc::[]
 
-[#changelog]
+[[changelog]]
 == Changelog
 
 Release notes can be found in the link:https://github.com/jenkinsci/rest-list-parameter-plugin/releases[GitHub Releases]
 
-[#features]
+[[features]]
 == Features
 
 * Specify any REST/Web endpoint that returns either a Json or XML response with values to select from for a build
@@ -32,14 +32,14 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 * Set the per default preselected value
 * User-friendly error communication
 
-[#configuration]
+[[configuration]]
 == Configuration
 
 image::.media/parameter.png[Parameter configuration (Advanced collapsed)]
 image::.media/parameter-full.png[Parameter configuration (Advanced expanded)]
 image::.media/build.png[Demo Build (+ showcasing error messaging)]
 
-[#jsonPath-configuration]
+[[jsonPath-configuration]]
 === Json-Path configuration
 
 image::.media/json-path.png[Demo config for Json-Path]
@@ -48,7 +48,7 @@ If you expect the response of the specified endpoint to produce a Json response 
 
 The result of such a configuration will be the application of the Json-Path on the response Json to pars the string values later provided in the _Build with Parameter_ dropdown of this parameter.
 
-[#xPath-configuration]
+[[xPath-configuration]]
 === xPath configuration
 
 image::.media/xPath.png[Demo config for xPath]
@@ -57,7 +57,7 @@ If you expect the response of the specified endpoint to produce an XML response 
 
 The result of such a configuration will be the application of the xPath on the response XML to pars the string values later provided in the _Build with Parameter_ dropdown of this parameter.
 
-[#auth-configuration]
+[[auth-configuration]]
 === Authentication configuration
 
 Depending on the authentication requirement for the REST/Web endpoint there are three supported methods:
@@ -66,9 +66,12 @@ Depending on the authentication requirement for the REST/Web endpoint there are 
 * `BASIC` if this authentication type is required, then simply select any Username and Password credential in the _Credential ID_ field
 * `BEARER` if this authentication type is required, then simply select any Secret Text credential in the _Credential ID_ field
 
-NOTE: The Authentication header will be build and added based on the type of the selected credential type.
+[NOTE]
+====
+The Authentication header will be build and added based on the type of the selected credential type.
+====
 
-[#pipeline-parameter]
+[[pipeline-parameter]]
 === Definition in Pipeline
 
 [source,goovy]
@@ -98,7 +101,7 @@ pipeline {
 }
 ----
 
-[#jobdsl-parameter]
+[[jobdsl-parameter]]
 === Definition in JobDsl
 
 [source,goovy]
@@ -137,17 +140,20 @@ pipelineJob('DemoJob') {
 }
 ----
 
-[#contributing]
+[[contributing]]
 == Contributing
 
 I welcome all contributions and pull requests!
 If you have a larger feature in mind please open an issue, so we can discuss the implementation before you start.
 
-NOTE: I prefer GitHub Issues over Jira Issues, but I check both regularly.
+[NOTE]
+====
+I prefer GitHub Issues over Jira Issues, but I check both regularly.
+====
 
 For further contributing info please have a look at the JenkinsCI link:https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
 
-[#development]
+[[development]]
 == Development
 
 === Requirements
@@ -172,6 +178,9 @@ $ mvn -B hpi:run --file pom.xml
 
 === Release a new Version
 
-NOTE: This Plugin uses link:https://semver.org/spec/v2.0.0.html[SemVer] to version its releases
+[NOTE]
+====
+This Plugin uses link:https://semver.org/spec/v2.0.0.html[SemVer] to version its releases
+====
 
 To creat a new release follow the instruction found for the link:https://github.com/jenkinsci/incrementals-tools[Incremental tools] to create a release whilst incrementing the correct position of the SemVer.
