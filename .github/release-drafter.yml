@@ -1,5 +1,5 @@
 # Inherit base settings from https://github.com/jenkinsci/.github/blob/master/.github/release-drafter.yml
 _extends: .github
-name-template: REST List Parameter $NEXT_PATCH_VERSION
+name-template: REST List Parameter v$NEXT_PATCH_VERSION
 tag-template: rest-list-parameter-$NEXT_PATCH_VERSION
 version-template: $MAJOR.$MINOR.$PATCH
