@@ -37,14 +37,14 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 [#configuration]
 == Configuration
 
-image::media/parameter.png[Parameter configuration (Advanced collapsed)]
-image::media/parameter-full.png[Parameter configuration (Advanced expanded)]
-image::media/build.png[Demo Build (+ showcasing error messaging)]
+image::.media/parameter.png[Parameter configuration (Advanced collapsed)]
+image::.media/parameter-full.png[Parameter configuration (Advanced expanded)]
+image::.media/build.png[Demo Build (+ showcasing error messaging)]
 
 [#jsonPath-configuration]
 === Json-Path configuration
 
-image::media/json-path.png[Demo config for Json-Path]
+image::.media/json-path.png[Demo config for Json-Path]
 
 If you expect the response of the specified endpoint to produce a Json response and need to utilize Json-Path, then you have to set the MIME type to _APPLICATION_JSON_ (this will also send this MIME as `ACCEPT` header) and provide the desired Json-Path in the _Value Expression_ field.
 
@@ -53,7 +53,7 @@ The result of such a configuration will be the application of the Json-Path on t
 [#xPath-configuration]
 === xPath configuration
 
-image::media/xPath.png[Demo config for xPath]
+image::.media/xPath.png[Demo config for xPath]
 
 If you expect the response of the specified endpoint to produce an XML response and need to utilize xPath, then you have to set the MIME type to _APPLICATION_XML_ (this will also send this MIME as `ACCEPT` header) and provide the desired xPath in the _Value Expression_ field.
 
