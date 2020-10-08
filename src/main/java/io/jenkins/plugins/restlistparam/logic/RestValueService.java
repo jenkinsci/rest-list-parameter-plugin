@@ -33,7 +33,7 @@ public class RestValueService {
 
   /**
    * Returns a {@link ResultContainer} capsuling a optional String error message and a collection of parsed string values.
-   *
+   * <p>
    * This method uses its parameters to query a REST/Web endpoint to receive a {@link MimeType} response, which then
    * gets parsed with a supported Path expression to extract a collection of string values.
    *
@@ -61,9 +61,11 @@ public class RestValueService {
       valueCollection.setErrorMsg(rawValueError.get());
     }
 
-    if (!valueCollection.getErrorMsg().isPresent() && StringUtils.isNotBlank(filter)) {
-      Collection<String> filteredValues = filterValues(valueCollection.getValue(), filter);
-      valueCollection.setValue(filteredValues);
+    if (!valueCollection.getErrorMsg().isPresent()
+      && StringUtils.isNotBlank(filter)
+      && !filter.equalsIgnoreCase(".*"))
+    {
+      valueCollection = filterValues(valueCollection.getValue(), filter);
     }
 
     return valueCollection;
@@ -118,10 +120,10 @@ public class RestValueService {
 
   /**
    * Builds the OKHttp Headers that should get applied to the request.
-   *
+   * <p>
    * Sets a <em>ACCEPT</em> header and optionally a <em>AUTHORIZATION</em> header.
    * The <em>AUTHORIZATION</em> header gets set to <em>BASIC</em> or <em>BEARER</em> depending on credential type supplied.
-   *
+   * <p>
    * Currently supported credential types are {@link StandardUsernamePasswordCredentials} for BASIC and
    * {@link StringCredentials} for BEARER <em>AUTHORIZATION</em>.
    *
@@ -193,14 +195,32 @@ public class RestValueService {
    *
    * @param values The collection of string values
    * @param filter The regex expression string
-   * @return A filtered string collection based on the result of the applied regex filter
+   * @return A {@link ResultContainer} capsuling a filtered string collection or a user friendly error message
    */
-  private static Collection<String> filterValues(final Collection<String> values,
-                                                 final String filter)
+  private static ResultContainer<Collection<String>> filterValues(final Collection<String> values,
+                                                                  final String filter)
   {
-    return values.stream()
-                 .filter(value -> value.matches(filter))
-                 .collect(Collectors.toList());
+    ResultContainer<Collection<String>> container = new ResultContainer<>(Collections.emptyList());
+
+    try {
+      Collection<String> filteredValues = values.stream()
+                                                .filter(value -> value.matches(filter))
+                                                .collect(Collectors.toList());
+      if (!filteredValues.isEmpty()) {
+        container.setValue(filteredValues);
+      }
+      else {
+        container.setErrorMsg(Messages.RLP_RestValueService_info_FilterReturnedNoValues(filter));
+      }
+    }
+    catch (Exception ex) {
+      log.warning(Messages.RLP_RestValueService_warn_FilterErr());
+      container.setErrorMsg(Messages.RLP_RestValueService_warn_FilterErr());
+      log.fine("Exception Class: " + ex.getClass().getName() + "\n"
+                 + "Exception Message: " + ex.getMessage());
+    }
+
+    return container;
   }
 
 }

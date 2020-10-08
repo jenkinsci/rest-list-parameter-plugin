@@ -112,7 +112,7 @@ public class ValueResolver {
       final Collection<String> resolved = JsonPath.parse(jsonStr).read(expression);
 
       if (!resolved.isEmpty()) {
-        container.setValue(resolved);
+        container.setValue(new ArrayList<>(resolved));
       }
       else {
         log.warning(Messages.RLP_ValueResolver_warn_jPath_NoValues());
