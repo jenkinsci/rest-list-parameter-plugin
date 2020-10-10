@@ -3,15 +3,13 @@ name: Release Drafter
 on:
   push:
     # branches to consider in the event; optional, defaults to all
-    branches:
-      - master
-    tags:
-      - '*'
+    branches: [ main ]
+    tags: [ '*' ]
 
 jobs:
   update_release_draft:
     runs-on: ubuntu-latest
-    if: ${{ !startsWith(github.ref, "refs/tags") }}
+    if: ${{ ! startsWith(github.ref, "refs/tags") }}
     steps:
       - name: Update Release Draft
         uses: release-drafter/release-drafter@v5.11.0
