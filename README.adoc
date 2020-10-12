@@ -158,9 +158,9 @@ For further contributing info please have a look at the JenkinsCI link:https://g
 [#licence]
 == Licence
 
-image::https://www.gnu.org/graphics/gplv3-or-later.svg[GPLv3 or later licence badge]
+image::https://www.gnu.org/graphics/gplv3-or-later.svg[link="https://opensource.org/licenses/GPL-3.0"]
 
-Just if the badge from `shields.io` does not make it obvious enough, this project is licenced under the link:https://opensource.org/licenses/GPL-3.0[GPLv3] or later.
+Just if the badge from `shields.io` and the link:LICENSE[] file do not make it obvious enough, this project is licenced under the link:https://opensource.org/licenses/GPL-3.0[GPLv3] or later.
 
 [#development]
 == Development
