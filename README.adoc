@@ -155,6 +155,13 @@ I prefer GitHub Issues over Jira Issues, but I check both regularly.
 
 For further contributing info please have a look at the JenkinsCI link:https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
 
+[#licence]
+== Licence
+
+image::https://www.gnu.org/graphics/gplv3-or-later.svg[GPLv3 or later licence badge]
+
+Just if the badge from `shields.io` does not make it obvious enough, this project is licenced under the link:https://opensource.org/licenses/GPL-3.0[GPLv3] or later.
+
 [#development]
 == Development
 
