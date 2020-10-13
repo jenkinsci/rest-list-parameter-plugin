@@ -98,22 +98,16 @@ public class RestValueService {
         return FormValidation.ok();
       }
       else if (statusCode < 500) {
-        log.warning(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
         return FormValidation.error(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
       }
       else {
-        log.warning(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
         return FormValidation.error(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
       }
     }
     catch (UnknownHostException ex) {
-      log.warning(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
       return FormValidation.error(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
     }
     catch (IOException ex) {
-      log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
-      log.fine(EX_CLASS + ex.getClass().getName() + '\n'
-                 + EX_MESSAGE + ex.getMessage());
       return FormValidation.error(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
     }
   }
