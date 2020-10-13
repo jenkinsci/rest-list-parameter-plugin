@@ -18,8 +18,8 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -36,10 +36,10 @@ public class RestValueService {
   }
 
   /**
-   * Returns a {@link ResultContainer} capsuling a optional String error message and a collection of parsed string values.
+   * Returns a {@link ResultContainer} capsuling a optional String error message and a list of parsed string values.
    * <p>
    * This method uses its parameters to query a REST/Web endpoint to receive a {@link MimeType} response, which then
-   * gets parsed with a supported Path expression to extract a collection of string values.
+   * gets parsed with a supported Path expression to extract a list of string values.
    *
    * @param restEndpoint A http/https web address to the REST/Web endpoint
    * @param credentials  The credentials required to access said endpoint
@@ -48,31 +48,31 @@ public class RestValueService {
    * @param filter       additional regex filter on any parsed values
    * @return A {@link ResultContainer} that capsules either the desired values or a user friendly error message.
    */
-  public static ResultContainer<Collection<String>> get(final String restEndpoint,
-                                                        final StandardCredentials credentials,
-                                                        final MimeType mimeType,
-                                                        final String expression,
-                                                        final String filter)
+  public static ResultContainer<List<String>> get(final String restEndpoint,
+                                                  final StandardCredentials credentials,
+                                                  final MimeType mimeType,
+                                                  final String expression,
+                                                  final String filter)
   {
-    ResultContainer<Collection<String>> valueCollection = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<String>> valueList = new ResultContainer<>(Collections.emptyList());
     ResultContainer<String> rawValues = getValueStringFromRestEndpoint(restEndpoint, credentials, mimeType);
     Optional<String> rawValueError = rawValues.getErrorMsg();
 
     if (!rawValueError.isPresent()) {
-      valueCollection = convertToValuesCollection(mimeType, rawValues.getValue(), expression);
+      valueList = convertToValuesList(mimeType, rawValues.getValue(), expression);
     }
     else {
-      valueCollection.setErrorMsg(rawValueError.get());
+      valueList.setErrorMsg(rawValueError.get());
     }
 
-    if (!valueCollection.getErrorMsg().isPresent()
+    if (!valueList.getErrorMsg().isPresent()
       && StringUtils.isNotBlank(filter)
       && !filter.equalsIgnoreCase(".*"))
     {
-      valueCollection = filterValues(valueCollection.getValue(), filter);
+      valueList = filterValues(valueList.getValue(), filter);
     }
 
-    return valueCollection;
+    return valueList;
   }
 
   /**
@@ -214,18 +214,18 @@ public class RestValueService {
   }
 
   /**
-   * Converts a {@code valueString} of a given {@link MimeType} to a string collection based on the values parsed from the expression
+   * Converts a {@code valueString} of a given {@link MimeType} to a string list based on the values parsed from the expression
    *
    * @param mimeType    The {@link MimeType} of the {@code valueString}
    * @param valueString The value string to be parsed
    * @param expression  The Json-Path or xPath expression to apply on the {@code valueString}
    * @return A {@link ResultContainer} capsuling the results of the applied expression or an error message
    */
-  private static ResultContainer<Collection<String>> convertToValuesCollection(final MimeType mimeType,
-                                                                               final String valueString,
-                                                                               final String expression)
+  private static ResultContainer<List<String>> convertToValuesList(final MimeType mimeType,
+                                                                   final String valueString,
+                                                                   final String expression)
   {
-    ResultContainer<Collection<String>> container;
+    ResultContainer<List<String>> container;
 
     switch (mimeType) {
       case APPLICATION_JSON:
@@ -242,21 +242,21 @@ public class RestValueService {
   }
 
   /**
-   * Apply a simple regex filter on a collection of strings
+   * Apply a simple regex filter on a list of strings
    *
-   * @param values The collection of string values
+   * @param values The list of string values
    * @param filter The regex expression string
-   * @return A {@link ResultContainer} capsuling a filtered string collection or a user friendly error message
+   * @return A {@link ResultContainer} capsuling a filtered string list or a user friendly error message
    */
-  private static ResultContainer<Collection<String>> filterValues(final Collection<String> values,
-                                                                  final String filter)
+  private static ResultContainer<List<String>> filterValues(final List<String> values,
+                                                            final String filter)
   {
-    ResultContainer<Collection<String>> container = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<String>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
-      Collection<String> filteredValues = values.stream()
-                                                .filter(value -> value.matches(filter))
-                                                .collect(Collectors.toList());
+      List<String> filteredValues = values.stream()
+                                          .filter(value -> value.matches(filter))
+                                          .collect(Collectors.toList());
       if (!filteredValues.isEmpty()) {
         container.setValue(filteredValues);
       }

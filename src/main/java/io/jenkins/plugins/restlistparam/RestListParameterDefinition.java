@@ -22,8 +22,8 @@ import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class RestListParameterDefinition extends SimpleParameterDefinition {
@@ -36,7 +36,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private String defaultValue;
   private String filter;
   private String errorMsg;
-  private Collection<String> values;
+  private List<String> values;
 
   @DataBoundConstructor
   public RestListParameterDefinition(final String name,
@@ -111,11 +111,11 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     return errorMsg;
   }
 
-  public Collection<String> getValues() {
+  public List<String> getValues() {
     if (values == null || values.isEmpty()) {
       Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
 
-      ResultContainer<Collection<String>> container = RestValueService.get(
+      ResultContainer<List<String>> container = RestValueService.get(
         restEndpoint,
         credentials.orElse(null),
         mimeType,
