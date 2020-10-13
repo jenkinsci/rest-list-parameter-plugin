@@ -2,6 +2,7 @@ package io.jenkins.plugins.restlistparam.logic;
 
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import hudson.util.FormValidation;
 import io.jenkins.plugins.restlistparam.Messages;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
@@ -26,6 +27,9 @@ import java.util.stream.Collectors;
 public class RestValueService {
   private static final Logger log = Logger.getLogger(RestValueService.class.getName());
   private static final OkHttpClient client = new OkHttpClient();
+
+  private static final String EX_CLASS = "Exception Class: ";
+  private static final String EX_MESSAGE = "Exception Message: ";
 
   private RestValueService() {
     throw new IllegalStateException("Static Logic class");
@@ -72,6 +76,49 @@ public class RestValueService {
   }
 
   /**
+   * A basic validation method usable for configuration validation
+   *
+   * @param restEndpoint A http/https web address to the REST/Web endpoint
+   * @param credentials  The credentials required to access said endpoint
+   * @return A {@link FormValidation} to be used in the Jenkins configuration UI
+   */
+  public static FormValidation doBasicValidation(final String restEndpoint,
+                                                 final StandardCredentials credentials)
+  {
+    Request.Builder builder = new Request.Builder()
+      .url(restEndpoint);
+
+    if (credentials != null) {
+      builder.addHeader(HTTPHeaders.AUTHORIZATION, buildAuthTypeWithCredential(credentials));
+    }
+
+    try (Response response = client.newCall(builder.build()).execute()) {
+      int statusCode = response.code();
+      if (statusCode < 400) {
+        return FormValidation.ok();
+      }
+      else if (statusCode < 500) {
+        log.warning(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
+        return FormValidation.error(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
+      }
+      else {
+        log.warning(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
+        return FormValidation.error(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
+      }
+    }
+    catch (UnknownHostException ex) {
+      log.warning(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
+      return FormValidation.error(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
+    }
+    catch (IOException ex) {
+      log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+      log.fine(EX_CLASS + ex.getClass().getName() + '\n'
+                 + EX_MESSAGE + ex.getMessage());
+      return FormValidation.error(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+    }
+  }
+
+  /**
    * Performs the REST/Web request.
    *
    * @param restEndpoint A http/https web address to the REST/Web endpoint
@@ -111,8 +158,8 @@ public class RestValueService {
     catch (IOException ex) {
       log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
       container.setErrorMsg(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
-      log.fine("Exception Class: " + ex.getClass().getName() + "\n"
-                 + "Exception Message: " + ex.getMessage());
+      log.fine(EX_CLASS + ex.getClass().getName() + '\n'
+                 + EX_MESSAGE + ex.getMessage());
     }
 
     return container;
@@ -138,28 +185,38 @@ public class RestValueService {
       .add(HTTPHeaders.ACCEPT, mimeType.getMime());
 
     if (credentials != null) {
-      String authTypeAndCredential = "";
-
-      if (credentials instanceof StandardUsernamePasswordCredentials) {
-        log.fine(Messages.RLP_RestValueService_fine_UsingBasicAuth());
-        StandardUsernamePasswordCredentials cred = (StandardUsernamePasswordCredentials) credentials;
-        String uNameAndPasswd = cred.getUsername() + ":" + cred.getPassword().getPlainText();
-        authTypeAndCredential = "Basic " + Base64.getEncoder()
-                                                 .encodeToString(uNameAndPasswd.getBytes(StandardCharsets.UTF_8));
-      }
-      else if (credentials instanceof StringCredentials) {
-        log.fine(Messages.RLP_RestValueService_fine_UsingBearerAuth());
-        StringCredentials cred = (StringCredentials) credentials;
-        authTypeAndCredential = "Bearer " + cred.getSecret().getPlainText();
-      }
-      else {
-        log.warning(Messages.RLP_RestValueService_warn_UnsupportedCredential(credentials.getClass().getName()));
-      }
-
-      headBuilder.add(HTTPHeaders.AUTHORIZATION, authTypeAndCredential);
+      headBuilder.add(HTTPHeaders.AUTHORIZATION, buildAuthTypeWithCredential(credentials));
     }
 
     return headBuilder.build();
+  }
+
+  /**
+   * Helper method to determine <em>AUTHORIZATION</em> header Auth-type and credential
+   *
+   * @param credentials Credentials for use in <em>AUTHORIZATION</em> header
+   * @return Value to be used in the <em>AUTHORIZATION</em> header or empty string
+   */
+  private static String buildAuthTypeWithCredential(final StandardCredentials credentials) {
+    String authTypeWithCredential = "";
+
+    if (credentials instanceof StandardUsernamePasswordCredentials) {
+      log.fine(Messages.RLP_RestValueService_fine_UsingBasicAuth());
+      StandardUsernamePasswordCredentials cred = (StandardUsernamePasswordCredentials) credentials;
+      String uNameAndPasswd = cred.getUsername() + ":" + cred.getPassword().getPlainText();
+      authTypeWithCredential = "Basic " + Base64.getEncoder()
+                                               .encodeToString(uNameAndPasswd.getBytes(StandardCharsets.UTF_8));
+    }
+    else if (credentials instanceof StringCredentials) {
+      log.fine(Messages.RLP_RestValueService_fine_UsingBearerAuth());
+      StringCredentials cred = (StringCredentials) credentials;
+      authTypeWithCredential = "Bearer " + cred.getSecret().getPlainText();
+    }
+    else {
+      log.warning(Messages.RLP_RestValueService_warn_UnsupportedCredential(credentials.getClass().getName()));
+    }
+
+    return authTypeWithCredential;
   }
 
   /**
@@ -216,8 +273,8 @@ public class RestValueService {
     catch (Exception ex) {
       log.warning(Messages.RLP_RestValueService_warn_FilterErr());
       container.setErrorMsg(Messages.RLP_RestValueService_warn_FilterErr());
-      log.fine("Exception Class: " + ex.getClass().getName() + "\n"
-                 + "Exception Message: " + ex.getMessage());
+      log.fine(EX_CLASS + ex.getClass().getName() + '\n'
+                 + EX_MESSAGE + ex.getMessage());
     }
 
     return container;

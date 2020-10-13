@@ -179,7 +179,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
     @POST
     public FormValidation doCheckRestEndpoint(@AncestorInPath final Item context,
-                                              @QueryParameter final String value)
+                                              @QueryParameter final String value,
+                                              @QueryParameter final String credentialId)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -190,7 +191,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
       if (StringUtils.isNotBlank(value)) {
         if (value.matches("^http(s)?://.+")) {
-          return FormValidation.ok();
+          Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+          return RestValueService.doBasicValidation(value, credentials.orElse(null));
         }
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointUrl());
       }
