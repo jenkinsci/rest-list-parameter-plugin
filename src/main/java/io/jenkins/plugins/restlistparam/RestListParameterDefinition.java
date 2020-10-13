@@ -235,5 +235,39 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     {
       return CredentialsUtils.doCheckCredentialsId(context, value);
     }
+
+    @POST
+    public FormValidation doTestConfiguration(@AncestorInPath final Item context,
+                                              @QueryParameter final String restEndpoint,
+                                              @QueryParameter final String credentialId,
+                                              @QueryParameter final MimeType mimeType,
+                                              @QueryParameter final String valueExpression,
+                                              @QueryParameter final String filter)
+    {
+      if (context == null) {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+      }
+      else {
+        context.checkPermission(Item.CONFIGURE);
+      }
+
+      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+      ResultContainer<List<String>> container = RestValueService.get(
+        restEndpoint,
+        credentials.orElse(null),
+        mimeType,
+        valueExpression,
+        filter);
+
+      Optional<String> errorMsg = container.getErrorMsg();
+      List<String> values = container.getValue();
+      if (errorMsg.isPresent()) {
+        return FormValidation.error(errorMsg.get());
+      }
+
+      // values should NEVER be empty here
+      // due to all the filtering and error handling done in the RestValueService
+      return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), values.get(0)));
+    }
   }
 }
