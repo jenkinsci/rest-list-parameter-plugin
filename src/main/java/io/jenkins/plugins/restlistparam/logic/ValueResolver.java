@@ -20,8 +20,8 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class ValueResolver {
@@ -32,16 +32,16 @@ public class ValueResolver {
   }
 
   /**
-   * Parses a {@code xmlStr}, applies a xPath {@code expression} and returns a collection of strings based on the result
+   * Parses a {@code xmlStr}, applies a xPath {@code expression} and returns a list of strings based on the result
    *
    * @param xmlStr     The XML text as string
    * @param expression The xPath expression
-   * @return A {@link ResultContainer} capsuling either a collection of strings or a user friendly error message
+   * @return A {@link ResultContainer} capsuling either a list of strings or a user friendly error message
    */
-  public static ResultContainer<Collection<String>> resolveXPath(final String xmlStr,
-                                                                 final String expression)
+  public static ResultContainer<List<String>> resolveXPath(final String xmlStr,
+                                                           final String expression)
   {
-    ResultContainer<Collection<String>> container = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<String>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -53,7 +53,7 @@ public class ValueResolver {
 
       NodeList nodeList = (NodeList) xPath.evaluate(expression, xmlDocument, XPathConstants.NODESET);
       if (nodeList.getLength() > 0) {
-        container.setValue(xmlNodeListToCollection(nodeList));
+        container.setValue(xmlNodeListToList(nodeList));
       }
       else {
         log.warning(Messages.RLP_ValueResolver_warn_xPath_NoValues());
@@ -81,13 +81,13 @@ public class ValueResolver {
   }
 
   /**
-   * A helper method to convert a XML {@link NodeList} to a collection of strings
+   * A helper method to convert a XML {@link NodeList} to a list of strings
    *
    * @param nodeList The {@link NodeList} to convert
-   * @return A collection of strings converted from the {@code nodeList} (can be empty if {@code nodeList} is empty)
+   * @return A list of strings converted from the {@code nodeList} (can be empty if {@code nodeList} is empty)
    */
-  private static Collection<String> xmlNodeListToCollection(NodeList nodeList) {
-    Collection<String> res = new ArrayList<>(nodeList.getLength());
+  private static List<String> xmlNodeListToList(NodeList nodeList) {
+    List<String> res = new ArrayList<>(nodeList.getLength());
 
     for (int i = 0; i < nodeList.getLength(); ++i) {
       res.add(nodeList.item(i).getTextContent());
@@ -97,19 +97,19 @@ public class ValueResolver {
   }
 
   /**
-   * Parses a {@code jsonStr}, applies a Json-Path {@code expression} and returns a collection of strings based on the result
+   * Parses a {@code jsonStr}, applies a Json-Path {@code expression} and returns a list of strings based on the result
    *
    * @param jsonStr    The Json text as string
    * @param expression The Json-Path expression
-   * @return A {@link ResultContainer} capsuling either a collection of strings or a user friendly error message
+   * @return A {@link ResultContainer} capsuling either a list of strings or a user friendly error message
    */
-  public static ResultContainer<Collection<String>> resolveJsonPath(final String jsonStr,
-                                                                    final String expression)
+  public static ResultContainer<List<String>> resolveJsonPath(final String jsonStr,
+                                                              final String expression)
   {
-    ResultContainer<Collection<String>> container = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<String>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
-      final Collection<String> resolved = JsonPath.parse(jsonStr).read(expression);
+      final List<String> resolved = JsonPath.parse(jsonStr).read(expression);
 
       if (!resolved.isEmpty()) {
         container.setValue(new ArrayList<>(resolved));

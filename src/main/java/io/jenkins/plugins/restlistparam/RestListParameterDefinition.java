@@ -22,8 +22,8 @@ import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class RestListParameterDefinition extends SimpleParameterDefinition {
@@ -36,7 +36,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private String defaultValue;
   private String filter;
   private String errorMsg;
-  private Collection<String> values;
+  private List<String> values;
 
   @DataBoundConstructor
   public RestListParameterDefinition(final String name,
@@ -111,11 +111,11 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     return errorMsg;
   }
 
-  public Collection<String> getValues() {
+  public List<String> getValues() {
     if (values == null || values.isEmpty()) {
       Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
 
-      ResultContainer<Collection<String>> container = RestValueService.get(
+      ResultContainer<List<String>> container = RestValueService.get(
         restEndpoint,
         credentials.orElse(null),
         mimeType,
@@ -179,7 +179,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
     @POST
     public FormValidation doCheckRestEndpoint(@AncestorInPath final Item context,
-                                              @QueryParameter final String value)
+                                              @QueryParameter final String value,
+                                              @QueryParameter final String credentialId)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -190,7 +191,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
       if (StringUtils.isNotBlank(value)) {
         if (value.matches("^http(s)?://.+")) {
-          return FormValidation.ok();
+          Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+          return RestValueService.doBasicValidation(value, credentials.orElse(null));
         }
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointUrl());
       }
@@ -232,6 +234,53 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
                                               @QueryParameter final String value)
     {
       return CredentialsUtils.doCheckCredentialsId(context, value);
+    }
+
+    @POST
+    public FormValidation doTestConfiguration(@AncestorInPath final Item context,
+                                              @QueryParameter final String restEndpoint,
+                                              @QueryParameter final String credentialId,
+                                              @QueryParameter final MimeType mimeType,
+                                              @QueryParameter final String valueExpression,
+                                              @QueryParameter final String filter)
+    {
+      if (context == null) {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+      }
+      else {
+        context.checkPermission(Item.CONFIGURE);
+      }
+
+      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+      if (StringUtils.isBlank(restEndpoint)) {
+        return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
+      }
+      if (StringUtils.isNotBlank(credentialId) && !credentials.isPresent()) {
+        return FormValidation.error(Messages.RLP_CredentialsUtils_ValidationErr_CannotFind());
+      }
+      if (mimeType == null) {
+        return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_UnknownMime());
+      }
+      if (StringUtils.isBlank(valueExpression)) {
+        return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
+      }
+
+      ResultContainer<List<String>> container = RestValueService.get(
+        restEndpoint,
+        credentials.orElse(null),
+        mimeType,
+        valueExpression,
+        filter);
+
+      Optional<String> errorMsg = container.getErrorMsg();
+      List<String> values = container.getValue();
+      if (errorMsg.isPresent()) {
+        return FormValidation.error(errorMsg.get());
+      }
+
+      // values should NEVER be empty here
+      // due to all the filtering and error handling done in the RestValueService
+      return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), values.get(0)));
     }
   }
 }
