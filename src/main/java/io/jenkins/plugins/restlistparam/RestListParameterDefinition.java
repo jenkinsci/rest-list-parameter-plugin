@@ -252,6 +252,19 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       }
 
       Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+      if (StringUtils.isBlank(restEndpoint)) {
+        return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
+      }
+      if (StringUtils.isNotBlank(credentialId) && !credentials.isPresent()) {
+        return FormValidation.error(Messages.RLP_CredentialsUtils_ValidationErr_CannotFind());
+      }
+      if (mimeType == null) {
+        return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_UnknownMime());
+      }
+      if (StringUtils.isBlank(valueExpression)) {
+        return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
+      }
+
       ResultContainer<List<String>> container = RestValueService.get(
         restEndpoint,
         credentials.orElse(null),
