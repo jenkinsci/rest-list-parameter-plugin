@@ -33,6 +33,7 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 * Filter the already filtered/parsed values via a REGEX
 * Set the per default preselected value
 * User-friendly error communication
+* Advanced configuration validation (v1.1.x+)
 
 [#configuration]
 == Configuration
@@ -72,6 +73,19 @@ Depending on the authentication requirement for the REST/Web endpoint there are 
 ====
 The Authentication header will be build and added based on the type of the selected credential type.
 ====
+
+[#validation]
+=== Parameter Config Validation (v1.1.x+)
+
+NOTE: This feature got requested, and I found it useful :grin:
+
+The configuration page of this plugin features supportive form validation (which was already present in a basic form in v1.0.x).
+With v1.1.x+ the validation got expanded to be more helpful and prevent the constant switch from the configuration to a build and back, just to validate the configuration.
+The most notable expansion in validation was the `REST Endpoint` field validation, which now works similar to the validation found for the SCM fields (Endpoint and credential).
+Additionally, a `Test Configuration` button got added, which once pressed, attempts to query the endpoint and list the number of parsed values as well as the first value in the list.
+
+image::.media/config-valid.png[Successful Configuiration Validation]
+image::.media/config-invalid.png[Faild Configuiration Validation]
 
 [#pipeline-parameter]
 === Definition in Pipeline
