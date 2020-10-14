@@ -144,13 +144,13 @@ public class RestValueService {
         log.fine(Messages.RLP_RestValueService_fine_UsingBasicAuth());
         StandardUsernamePasswordCredentials cred = (StandardUsernamePasswordCredentials) credentials;
         String uNameAndPasswd = cred.getUsername() + ":" + cred.getPassword().getPlainText();
-        authTypeAndCredential = "Basic" + Base64.getEncoder()
-                                                .encodeToString(uNameAndPasswd.getBytes(StandardCharsets.UTF_8));
+        authTypeAndCredential = "Basic " + Base64.getEncoder()
+                                                 .encodeToString(uNameAndPasswd.getBytes(StandardCharsets.UTF_8));
       }
       else if (credentials instanceof StringCredentials) {
         log.fine(Messages.RLP_RestValueService_fine_UsingBearerAuth());
         StringCredentials cred = (StringCredentials) credentials;
-        authTypeAndCredential = "Bearer" + cred.getSecret().getPlainText();
+        authTypeAndCredential = "Bearer " + cred.getSecret().getPlainText();
       }
       else {
         log.warning(Messages.RLP_RestValueService_warn_UnsupportedCredential(credentials.getClass().getName()));
