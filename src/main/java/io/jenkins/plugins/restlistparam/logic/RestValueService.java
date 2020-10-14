@@ -199,7 +199,7 @@ public class RestValueService {
       StandardUsernamePasswordCredentials cred = (StandardUsernamePasswordCredentials) credentials;
       String uNameAndPasswd = cred.getUsername() + ":" + cred.getPassword().getPlainText();
       authTypeWithCredential = "Basic " + Base64.getEncoder()
-                                               .encodeToString(uNameAndPasswd.getBytes(StandardCharsets.UTF_8));
+                                                .encodeToString(uNameAndPasswd.getBytes(StandardCharsets.UTF_8));
     }
     else if (credentials instanceof StringCredentials) {
       log.fine(Messages.RLP_RestValueService_fine_UsingBearerAuth());
