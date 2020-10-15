@@ -69,15 +69,10 @@ Depending on the authentication requirement for the REST/Web endpoint there are 
 * `BASIC` if this authentication type is required, then simply select any Username and Password credential in the _Credential ID_ field
 * `BEARER` if this authentication type is required, then simply select any Secret Text credential in the _Credential ID_ field
 
-[NOTE]
-====
-The Authentication header will be build and added based on the type of the selected credential type.
-====
+NOTE: The Authentication header will be build and added based on the type of the selected credential type.
 
 [#validation]
 === Parameter Config Validation (v1.1.x+)
-
-NOTE: This feature got requested, and I found it useful :grin:
 
 The configuration page of this plugin features supportive form validation (which was already present in a basic form in v1.0.x).
 With v1.1.x+ the validation got expanded to be more helpful and prevent the constant switch from the configuration to a build and back, just to validate the configuration.
@@ -162,10 +157,7 @@ pipelineJob('DemoJob') {
 I welcome all contributions and pull requests!
 If you have a larger feature in mind please open an issue, so we can discuss the implementation before you start.
 
-[NOTE]
-====
-I prefer GitHub Issues over Jira Issues, but I check both regularly.
-====
+NOTE: I prefer GitHub Issues over Jira Issues, but I check both regularly.
 
 For further contributing info please have a look at the JenkinsCI link:https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md[contribution guidelines].
 
@@ -201,9 +193,6 @@ $ mvn -B hpi:run --file pom.xml
 
 === Release a new Version
 
-[NOTE]
-====
-This Plugin uses link:https://semver.org/spec/v2.0.0.html[SemVer] to version its releases
-====
+NOTE: This Plugin uses link:https://semver.org/spec/v2.0.0.html[SemVer] to version its releases
 
 To creat a new release follow the instruction found for the link:https://github.com/jenkinsci/incrementals-tools[Incremental tools] to create a release whilst incrementing the correct position of the SemVer.
