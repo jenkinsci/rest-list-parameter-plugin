@@ -4,25 +4,30 @@ on:
   push:
     # branches to consider in the event; optional, defaults to all
     branches: [ main ]
-    tags: [ '*' ]
 
 jobs:
   update_release_draft:
     name: Update release draft
     runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[maven-release-plugin] prepare release') != true
     steps:
       - name: Update Release Draft
-        id: draft_release
         uses: release-drafter/release-drafter@v5.12.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release_with_assets:
     name: Publish drafted release with assets
-    needs: [ update_release_draft ]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+    if: contains(github.event.head_commit.message, '[maven-release-plugin] prepare release')
     steps:
+      - name: Publish Release Draft
+        id: publish_release
+        uses: release-drafter/release-drafter@v5.11.0
+        with:
+          publish: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v2
       - name: Set up JDK 11
         uses: actions/setup-java@v1
@@ -37,18 +42,12 @@ jobs:
             ${{ runner.os }}-maven-
       - name: Build with Maven
         run: mvn -B package --file pom.xml -Dmaven.test.skip=true
-      - name: Upload Release Asset to Release Draft
+      - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.draft_release.outputs.upload_url }}
+          upload_url: ${{ steps.publish_release.outputs.upload_url }}
           asset_path: ./target/rest-list-parameter.hpi
           asset_name: rest-list-parameter.hpi
           asset_content_type: application/zip
-      - name: Publish drafted Releas
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          release_id: ${{ steps.draft_release.outputs.id }}
