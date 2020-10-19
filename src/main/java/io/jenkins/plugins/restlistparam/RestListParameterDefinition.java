@@ -24,6 +24,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class RestListParameterDefinition extends SimpleParameterDefinition {
@@ -166,6 +167,49 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
   public boolean isValid(ParameterValue value) {
     return values.contains(((RestListParameterValue) value).getValue());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+      getName(), getDescription(), getRestEndpoint(), getCredentialId(),
+      getMimeType(), getValueExpression(), getFilter());
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (RestListParameterDefinition.class != getClass()) {
+      return false;
+    }
+    if (obj == null || getClass() != obj.getClass()) {
+      return false;
+    }
+    RestListParameterDefinition other = (RestListParameterDefinition) obj;
+    if (!Objects.equals(getName(), other.getName())) {
+      return false;
+    }
+    if (!Objects.equals(getDescription(), other.getDescription())) {
+      return false;
+    }
+    if (!Objects.equals(getRestEndpoint(), other.getRestEndpoint())) {
+      return false;
+    }
+    if (!Objects.equals(getCredentialId(), other.getCredentialId())) {
+      return false;
+    }
+    if (!Objects.equals(getMimeType(), other.getMimeType())) {
+      return false;
+    }
+    if (!Objects.equals(getValueExpression(), other.getValueExpression())) {
+      return false;
+    }
+    if (!Objects.equals(getFilter(), other.getFilter())) {
+      return false;
+    }
+    return Objects.equals(defaultValue, other.defaultValue);
   }
 
   @Symbol({"RESTList", "RestList", "RESTListParam"})
