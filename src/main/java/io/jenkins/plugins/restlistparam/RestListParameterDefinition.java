@@ -11,6 +11,7 @@ import hudson.util.ListBoxModel;
 import io.jenkins.plugins.restlistparam.logic.RestValueService;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
+import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.CredentialsUtils;
 import io.jenkins.plugins.restlistparam.util.PathExpressionValidationUtils;
 import jenkins.model.Jenkins;
@@ -34,6 +35,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private final String credentialId;
   private final MimeType mimeType;
   private final String valueExpression;
+  private ValueOrder valueOrder;
   private String defaultValue;
   private String filter;
   private String errorMsg;
@@ -47,7 +49,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
                                      final MimeType mimeType,
                                      final String valueExpression)
   {
-    this(name, description, restEndpoint, credentialId, mimeType, valueExpression, ".*", "");
+    this(name, description, restEndpoint, credentialId, mimeType, valueExpression, ValueOrder.NONE, ".*", "");
   }
 
   public RestListParameterDefinition(final String name,
@@ -56,6 +58,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
                                      final String credentialId,
                                      final MimeType mimeType,
                                      final String valueExpression,
+                                     final ValueOrder valueOrder,
                                      final String filter,
                                      final String defaultValue)
   {
@@ -65,6 +68,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     this.valueExpression = valueExpression;
     this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
     this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
+    this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
     this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
     this.errorMsg = "";
     this.values = Collections.emptyList();
@@ -88,6 +92,15 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
   public String getFilter() {
     return filter;
+  }
+
+  @DataBoundSetter
+  public void setValueOrder(final ValueOrder valueOrder) {
+    this.valueOrder = valueOrder;
+  }
+
+  public ValueOrder getValueOrder() {
+    return valueOrder;
   }
 
   @DataBoundSetter
@@ -121,7 +134,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
         credentials.orElse(null),
         mimeType,
         valueExpression,
-        filter);
+        filter, ValueOrder.NONE);
 
       setErrorMsg(container.getErrorMsg().orElse(""));
       values = container.getValue();
@@ -134,8 +147,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     if (defaultValue instanceof RestListParameterValue) {
       RestListParameterValue value = (RestListParameterValue) defaultValue;
       return new RestListParameterDefinition(
-        getName(), getDescription(), getRestEndpoint(), getCredentialId(),
-        getMimeType(), getValueExpression(), getFilter(), value.getValue());
+        getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
+        getValueExpression(), getValueOrder(), getFilter(), value.getValue());
     }
     else {
       return this;
@@ -314,7 +327,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
         credentials.orElse(null),
         mimeType,
         valueExpression,
-        filter);
+        filter, ValueOrder.NONE);
 
       Optional<String> errorMsg = container.getErrorMsg();
       List<String> values = container.getValue();
