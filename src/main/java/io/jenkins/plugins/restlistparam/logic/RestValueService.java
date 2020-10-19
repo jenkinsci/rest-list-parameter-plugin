@@ -265,8 +265,8 @@ public class RestValueService {
       }
     }
     catch (Exception ex) {
-      log.warning(Messages.RLP_RestValueService_warn_FilterErr());
-      container.setErrorMsg(Messages.RLP_RestValueService_warn_FilterErr());
+      log.warning(Messages.RLP_RestValueService_warn_FilterErr(ex.getClass().getName()));
+      container.setErrorMsg(Messages.RLP_RestValueService_warn_FilterErr(ex.getClass().getName()));
       log.fine(EX_CLASS + ex.getClass().getName() + '\n'
                  + EX_MESSAGE + ex.getMessage());
     }
