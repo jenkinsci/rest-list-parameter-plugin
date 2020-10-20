@@ -289,16 +289,16 @@ public class RestValueService {
     return container;
   }
 
-  // Just some helper functions to declutter if conditions
-  private static Boolean isFilterOrOrderSet(String filter, ValueOrder order) {
+  // Just some helper functions to de-clutter if conditions
+  private static boolean isFilterOrOrderSet(String filter, ValueOrder order) {
     return isFilterSet(filter) || isOrderSet(order);
   }
 
-  private static Boolean isFilterSet(String filter) {
+  private static boolean isFilterSet(String filter) {
     return StringUtils.isNotBlank(filter) && !filter.equalsIgnoreCase(".*");
   }
 
-  private static Boolean isOrderSet(ValueOrder order) {
+  private static boolean isOrderSet(ValueOrder order) {
     return order != null && order != ValueOrder.NONE;
   }
 
