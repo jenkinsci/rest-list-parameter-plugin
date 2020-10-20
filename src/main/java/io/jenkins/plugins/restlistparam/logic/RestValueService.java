@@ -8,6 +8,7 @@ import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.HTTPHeaders;
+import io.jenkins.plugins.restlistparam.util.OKHttpUtil;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class RestValueService {
   private static final Logger log = Logger.getLogger(RestValueService.class.getName());
-  private static final OkHttpClient client = new OkHttpClient();
+  private static final OkHttpClient client = OKHttpUtil.buildClientWitCache();
 
   private static final String EX_CLASS = "Exception Class: ";
   private static final String EX_MESSAGE = "Exception Message: ";
