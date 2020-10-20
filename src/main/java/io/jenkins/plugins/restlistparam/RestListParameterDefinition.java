@@ -134,7 +134,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
         credentials.orElse(null),
         mimeType,
         valueExpression,
-        filter, ValueOrder.NONE);
+        filter,
+        valueOrder);
 
       setErrorMsg(container.getErrorMsg().orElse(""));
       values = container.getValue();
@@ -299,7 +300,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
                                               @QueryParameter final String credentialId,
                                               @QueryParameter final MimeType mimeType,
                                               @QueryParameter final String valueExpression,
-                                              @QueryParameter final String filter)
+                                              @QueryParameter final String filter,
+                                              @QueryParameter final ValueOrder valueOrder)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -327,7 +329,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
         credentials.orElse(null),
         mimeType,
         valueExpression,
-        filter, ValueOrder.NONE);
+        filter,
+        valueOrder);
 
       Optional<String> errorMsg = container.getErrorMsg();
       List<String> values = container.getValue();
