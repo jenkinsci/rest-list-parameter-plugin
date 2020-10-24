@@ -28,6 +28,10 @@
       <f:textbox default=".*" />
     </f:entry>
 
+    <f:entry title="${%parameter.applySortOrder}" field="valueOrder">
+      <f:enum>${it}</f:enum>
+    </f:entry>
+
     <f:entry title="${%parameter.defaultValue}" field="defaultValue">
       <f:textbox default="" />
     </f:entry>
@@ -35,7 +39,7 @@
 
   <f:validateButton
       title="${%parameter.testConfig}" progress="${%parameter.testing}"
-      method="testConfiguration" with="restEndpoint,credentialId,mimeType,valueExpression,filter" />
+      method="testConfiguration" with="restEndpoint,credentialId,mimeType,valueExpression,filter,valueOrder" />
 
   <f:entry title="${%parameter.description}" field="description">
     <f:textarea />
