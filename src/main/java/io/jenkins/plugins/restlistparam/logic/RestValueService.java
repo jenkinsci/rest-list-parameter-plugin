@@ -6,6 +6,7 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.restlistparam.Messages;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
+import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.HTTPHeaders;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
@@ -17,10 +18,7 @@ import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -46,13 +44,15 @@ public class RestValueService {
    * @param mimeType     The MIME type of the expected REST/Web response
    * @param expression   The Json-Path or xPath expression to filter the values
    * @param filter       additional regex filter on any parsed values
+   * @param order        Set a {@link ValueOrder} to optionally reorder the values
    * @return A {@link ResultContainer} that capsules either the desired values or a user friendly error message.
    */
   public static ResultContainer<List<String>> get(final String restEndpoint,
                                                   final StandardCredentials credentials,
                                                   final MimeType mimeType,
                                                   final String expression,
-                                                  final String filter)
+                                                  final String filter,
+                                                  final ValueOrder order)
   {
     ResultContainer<List<String>> valueList = new ResultContainer<>(Collections.emptyList());
     ResultContainer<String> rawValues = getValueStringFromRestEndpoint(restEndpoint, credentials, mimeType);
@@ -65,11 +65,8 @@ public class RestValueService {
       valueList.setErrorMsg(rawValueError.get());
     }
 
-    if (!valueList.getErrorMsg().isPresent()
-      && StringUtils.isNotBlank(filter)
-      && !filter.equalsIgnoreCase(".*"))
-    {
-      valueList = filterValues(valueList.getValue(), filter);
+    if (!valueList.getErrorMsg().isPresent() && isFilterOrOrderSet(filter, order)) {
+      valueList = filterAndSortValues(valueList.getValue(), filter, order);
     }
 
     return valueList;
@@ -242,36 +239,67 @@ public class RestValueService {
   }
 
   /**
-   * Apply a simple regex filter on a list of strings
+   * Apply a simple regex filter and/or order on a list of strings
    *
    * @param values The list of string values
-   * @param filter The regex expression string
+   * @param filter The regex expression string (if any)
+   * @param order  The Order to apply (if any)
    * @return A {@link ResultContainer} capsuling a filtered string list or a user friendly error message
    */
-  private static ResultContainer<List<String>> filterValues(final List<String> values,
-                                                            final String filter)
+  private static ResultContainer<List<String>> filterAndSortValues(final List<String> values,
+                                                                   final String filter,
+                                                                   final ValueOrder order)
   {
     ResultContainer<List<String>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
-      List<String> filteredValues = values.stream()
-                                          .filter(value -> value.matches(filter))
-                                          .collect(Collectors.toList());
-      if (!filteredValues.isEmpty()) {
-        container.setValue(filteredValues);
+      List<String> updatedValues;
+
+      if (isFilterSet(filter) && !isOrderSet(order)) {
+        updatedValues = values.stream()
+                              .filter(value -> value.matches(filter))
+                              .collect(Collectors.toList());
+      }
+      else if (!isFilterSet(filter) && isOrderSet(order)) {
+        updatedValues = values.stream()
+                              .sorted(order == ValueOrder.ASC ? Comparator.naturalOrder() : Comparator.reverseOrder())
+                              .collect(Collectors.toList());
+      }
+      else {
+        updatedValues = values.stream()
+                              .filter(value -> value.matches(filter))
+                              .sorted(order == ValueOrder.ASC ? Comparator.naturalOrder() : Comparator.reverseOrder())
+                              .collect(Collectors.toList());
+      }
+
+      if (!updatedValues.isEmpty()) {
+        container.setValue(updatedValues);
       }
       else {
         container.setErrorMsg(Messages.RLP_RestValueService_info_FilterReturnedNoValues(filter));
       }
     }
     catch (Exception ex) {
-      log.warning(Messages.RLP_RestValueService_warn_FilterErr());
-      container.setErrorMsg(Messages.RLP_RestValueService_warn_FilterErr());
+      log.warning(Messages.RLP_RestValueService_warn_FilterErr(ex.getClass().getName()));
+      container.setErrorMsg(Messages.RLP_RestValueService_warn_FilterErr(ex.getClass().getName()));
       log.fine(EX_CLASS + ex.getClass().getName() + '\n'
                  + EX_MESSAGE + ex.getMessage());
     }
 
     return container;
+  }
+
+  // Just some helper functions to de-clutter if conditions
+  private static boolean isFilterOrOrderSet(String filter, ValueOrder order) {
+    return isFilterSet(filter) || isOrderSet(order);
+  }
+
+  private static boolean isFilterSet(String filter) {
+    return StringUtils.isNotBlank(filter) && !filter.equalsIgnoreCase(".*");
+  }
+
+  private static boolean isOrderSet(ValueOrder order) {
+    return order != null && order != ValueOrder.NONE;
   }
 
 }

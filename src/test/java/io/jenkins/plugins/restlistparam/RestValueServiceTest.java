@@ -3,6 +3,7 @@ package io.jenkins.plugins.restlistparam;
 import io.jenkins.plugins.restlistparam.logic.RestValueService;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
+import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -17,7 +18,8 @@ public class RestValueServiceTest {
            null,
            MimeType.APPLICATION_JSON,
            "$.*.name",
-           null);
+           null,
+           ValueOrder.NONE);
     Assert.assertFalse(test.getErrorMsg().isPresent());
     Assert.assertEquals(3, test.getValue().size());
     Assert.assertArrayEquals(new String[]{"v10.6.4", "v10.6.3", "v10.6.2"}, test.getValue().toArray());
@@ -30,7 +32,8 @@ public class RestValueServiceTest {
            null,
            MimeType.APPLICATION_JSON,
            "$.*.tag_name",
-           null);
+           null,
+           ValueOrder.NONE);
     Assert.assertNotNull(test);
     Assert.assertTrue(test.getErrorMsg().isPresent());
     Assert.assertEquals(0, test.getValue().size());
