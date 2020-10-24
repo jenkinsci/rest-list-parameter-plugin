@@ -195,7 +195,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     if (this == obj) {
       return true;
     }
-    if (RestListParameterDefinition.class != getClass()) {
+    if (this.getClass() != getClass()) {
       return false;
     }
     if (obj == null || getClass() != obj.getClass()) {
