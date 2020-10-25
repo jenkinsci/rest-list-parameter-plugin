@@ -28,7 +28,7 @@ public class OkHttpUtils {
 
   /**
    * Builds a OkHTTP client that respects any proxy set in the Jenkins 'Plugin Manager' and offers a response cache.
-   * A proxy will only be applied if the host of the {@param httpEndpoint} is NOT part of the noProxy values.
+   * A proxy will only be applied if the host of the {@code httpEndpoint} is NOT part of the noProxy values.
    * The response cache is only present if the creation on disk is possible, otherwise there is none
    *
    * @param httpEndpoint the host of the endpoint will get looked up against the noProxy values
