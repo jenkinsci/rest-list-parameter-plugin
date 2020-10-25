@@ -8,7 +8,7 @@ import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.HTTPHeaders;
-import io.jenkins.plugins.restlistparam.util.OkHttpUtil;
+import io.jenkins.plugins.restlistparam.util.OkHttpUtils;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -82,10 +82,10 @@ public class RestValueService {
   public static FormValidation doBasicValidation(final String restEndpoint,
                                                  final StandardCredentials credentials)
   {
-    OkHttpClient client = OkHttpUtil.getClientWithProxyAndCache(restEndpoint);
+    OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(restEndpoint);
     // don't cache the validation response
     Request.Builder builder = new Request.Builder()
-      .cacheControl(OkHttpUtil.getCacheControl(0))
+      .cacheControl(OkHttpUtils.getCacheControl(0))
       .url(restEndpoint);
 
     if (credentials != null) {
@@ -126,10 +126,10 @@ public class RestValueService {
   {
     ResultContainer<String> container = new ResultContainer<>("");
 
-    OkHttpClient client = OkHttpUtil.getClientWithProxyAndCache(restEndpoint);
+    OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(restEndpoint);
     Request request = new Request.Builder()
       .url(restEndpoint)
-      .cacheControl(OkHttpUtil.getCacheControl(5))
+      .cacheControl(OkHttpUtils.getCacheControl(5))
       .headers(buildHeaders(credentials, mimeType))
       .build();
 

@@ -13,15 +13,15 @@ import java.net.URL;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-public class OkHttpUtil {
-  private static final Logger log = Logger.getLogger(OkHttpUtil.class.getName());
+public class OkHttpUtils {
+  private static final Logger log = Logger.getLogger(OkHttpUtils.class.getName());
   private static final Jenkins jenkins = Jenkins.getInstanceOrNull();
   private static final String PARAMETERS = "parameters";
   private static final String PARAMETER_ID = "restListParam";
   private static final long MEBIBYTE = 1024L * 1024L;
   private static final long CACHE_SIZE = 50L;
 
-  private OkHttpUtil() {
+  private OkHttpUtils() {
     throw new IllegalStateException("Utility class");
   }
 
