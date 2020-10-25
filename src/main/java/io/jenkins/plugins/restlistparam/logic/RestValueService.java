@@ -8,7 +8,7 @@ import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.HTTPHeaders;
-import io.jenkins.plugins.restlistparam.util.OKHttpUtil;
+import io.jenkins.plugins.restlistparam.util.OkHttpUtil;
 import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 
 public class RestValueService {
   private static final Logger log = Logger.getLogger(RestValueService.class.getName());
-  private static final OkHttpClient client = OKHttpUtil.buildClientWitCache();
 
   private static final String EX_CLASS = "Exception Class: ";
   private static final String EX_MESSAGE = "Exception Message: ";
@@ -83,7 +82,10 @@ public class RestValueService {
   public static FormValidation doBasicValidation(final String restEndpoint,
                                                  final StandardCredentials credentials)
   {
+    OkHttpClient client = OkHttpUtil.getClientWithProxyAndCache(restEndpoint);
+    // don't cache the validation response
     Request.Builder builder = new Request.Builder()
+      .cacheControl(OkHttpUtil.getCacheControl(0))
       .url(restEndpoint);
 
     if (credentials != null) {
@@ -124,8 +126,10 @@ public class RestValueService {
   {
     ResultContainer<String> container = new ResultContainer<>("");
 
+    OkHttpClient client = OkHttpUtil.getClientWithProxyAndCache(restEndpoint);
     Request request = new Request.Builder()
       .url(restEndpoint)
+      .cacheControl(OkHttpUtil.getCacheControl(5))
       .headers(buildHeaders(credentials, mimeType))
       .build();
 
