@@ -308,8 +308,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     }
 
     @POST
-    public FormValidation doTestCacheTime(@AncestorInPath final Item context,
-                                          @QueryParameter final Integer cacheTime)
+    public FormValidation doCheckCacheTime(@AncestorInPath final Item context,
+                                           @QueryParameter final Integer cacheTime)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
