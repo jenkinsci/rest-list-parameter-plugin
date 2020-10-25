@@ -1,6 +1,7 @@
 package io.jenkins.plugins.restlistparam.util;
 
 import hudson.FilePath;
+import io.jenkins.plugins.restlistparam.Messages;
 import jenkins.model.Jenkins;
 import okhttp3.Cache;
 import okhttp3.CacheControl;
@@ -45,19 +46,18 @@ public class OkHttpUtils {
         }
 
         File cacheDir = new File(parameterUserContent.toURI().getPath(), "okhttp_cache");
-        log.info("Using OKHttpClient WITH 50 MiB cache");
+        log.fine(Messages.PLP_OkHttpUtils_fine_cacheCreationSuccess(CACHE_SIZE));
         return new OkHttpClient.Builder()
           .cache(new Cache(cacheDir, CACHE_SIZE * MEBIBYTE))
           .proxy(getProxy(httpEndpoint))
           .build();
       }
       else {
-        log.info("Using OKHttpClient WITHOUT cache");
-        log.fine("Could not get Jenkins instance");
+        log.fine(Messages.PLP_OkHttpUtils_fine_noJenkinsInstance());
       }
     }
     catch (Exception ex) {
-      log.info("Using OKHttpClient WITHOUT cache");
+      log.warning(Messages.PLP_OkHttpUtils_warn_cacheIOException());
       log.fine("Cache creation failed with: " + ex.getClass().getName() + '\n'
                  + "EX Message: " + ex.getMessage());
     }
