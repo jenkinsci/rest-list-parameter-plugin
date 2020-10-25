@@ -24,21 +24,23 @@
 
   <!-- Some advances options -->
   <f:advanced>
-    <f:entry title="${%parameter.cacheTime}" field="cacheTime">
-      <f:number default="0" checkMethod="post" />
-    </f:entry>
+    <f:section title="${%parameter.advanced}" name="advanced">
+      <f:entry title="${%parameter.cacheTime}" field="cacheTime">
+        <f:number default="0" checkMethod="post" />
+      </f:entry>
 
-    <f:entry title="${%parameter.valueFilterPattern}" field="filter">
-      <f:textbox default=".*" />
-    </f:entry>
+      <f:entry title="${%parameter.valueFilterPattern}" field="filter">
+        <f:textbox default=".*" />
+      </f:entry>
 
-    <f:entry title="${%parameter.applySortOrder}" field="valueOrder">
-      <f:enum>${it}</f:enum>
-    </f:entry>
+      <f:entry title="${%parameter.applySortOrder}" field="valueOrder">
+        <f:enum>${it}</f:enum>
+      </f:entry>
 
-    <f:entry title="${%parameter.defaultValue}" field="defaultValue">
-      <f:textbox default="" />
-    </f:entry>
+      <f:entry title="${%parameter.defaultValue}" field="defaultValue">
+        <f:textbox default="" />
+      </f:entry>
+    </f:section>
   </f:advanced>
 
   <f:validateButton
