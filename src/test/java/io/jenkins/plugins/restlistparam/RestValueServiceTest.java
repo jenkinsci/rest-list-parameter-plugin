@@ -17,6 +17,7 @@ public class RestValueServiceTest {
       .get("http://api.github.com/repos/jellyfin/jellyfin/tags?per_page=3",
            null,
            MimeType.APPLICATION_JSON,
+           0,
            "$.*.name",
            null,
            ValueOrder.NONE);
@@ -31,6 +32,7 @@ public class RestValueServiceTest {
       .get("https://gitlab.example.com/api/v4/projects/gitlab-org%2Fgitlab-runner/releases",
            null,
            MimeType.APPLICATION_JSON,
+           0,
            "$.*.tag_name",
            null,
            ValueOrder.NONE);
