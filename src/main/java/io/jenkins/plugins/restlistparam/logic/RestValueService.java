@@ -42,6 +42,7 @@ public class RestValueService {
    * @param restEndpoint A http/https web address to the REST/Web endpoint
    * @param credentials  The credentials required to access said endpoint
    * @param mimeType     The MIME type of the expected REST/Web response
+   * @param cacheTime    Time for how long the REST response gets cached for in minutes
    * @param expression   The Json-Path or xPath expression to filter the values
    * @param filter       additional regex filter on any parsed values
    * @param order        Set a {@link ValueOrder} to optionally reorder the values
@@ -50,12 +51,13 @@ public class RestValueService {
   public static ResultContainer<List<String>> get(final String restEndpoint,
                                                   final StandardCredentials credentials,
                                                   final MimeType mimeType,
+                                                  final Integer cacheTime,
                                                   final String expression,
                                                   final String filter,
                                                   final ValueOrder order)
   {
     ResultContainer<List<String>> valueList = new ResultContainer<>(Collections.emptyList());
-    ResultContainer<String> rawValues = getValueStringFromRestEndpoint(restEndpoint, credentials, mimeType);
+    ResultContainer<String> rawValues = getValueStringFromRestEndpoint(restEndpoint, credentials, mimeType, cacheTime);
     Optional<String> rawValueError = rawValues.getErrorMsg();
 
     if (!rawValueError.isPresent()) {
@@ -118,18 +120,20 @@ public class RestValueService {
    * @param restEndpoint A http/https web address to the REST/Web endpoint
    * @param credentials  The credentials required to access said endpoint
    * @param mimeType     The MIME type of the expected REST/Web response
+   * @param cacheTime    Time for how long the REST response gets cached for in minutes
    * @return A {@link ResultContainer} capsuling either the response body string in the desired {@link MimeType} or an error message
    */
   private static ResultContainer<String> getValueStringFromRestEndpoint(final String restEndpoint,
                                                                         final StandardCredentials credentials,
-                                                                        final MimeType mimeType)
+                                                                        final MimeType mimeType,
+                                                                        final Integer cacheTime)
   {
     ResultContainer<String> container = new ResultContainer<>("");
 
     OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(restEndpoint);
     Request request = new Request.Builder()
       .url(restEndpoint)
-      .cacheControl(OkHttpUtils.getCacheControl(5))
+      .cacheControl(OkHttpUtils.getCacheControl(cacheTime))
       .headers(buildHeaders(credentials, mimeType))
       .build();
 
