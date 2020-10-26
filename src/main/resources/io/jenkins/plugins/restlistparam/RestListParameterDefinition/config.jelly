@@ -24,7 +24,7 @@
 
   <!-- Some advances options -->
   <f:advanced>
-    <f:section title="${%parameter.advanced}" name="advanced">
+    <f:section title="${%parameter.advanced}" >
       <f:entry title="${%parameter.cacheTime}" field="cacheTime">
         <f:number default="0" checkMethod="post" />
       </f:entry>
