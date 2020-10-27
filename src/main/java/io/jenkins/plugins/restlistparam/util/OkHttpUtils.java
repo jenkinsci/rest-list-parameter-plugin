@@ -46,18 +46,18 @@ public class OkHttpUtils {
         }
 
         File cacheDir = new File(parameterUserContent.toURI().getPath(), "okhttp_cache");
-        log.fine(Messages.PLP_OkHttpUtils_fine_cacheCreationSuccess(CACHE_SIZE));
+        log.fine(Messages.PLP_OkHttpUtils_fine_CacheCreationSuccess(CACHE_SIZE));
         return new OkHttpClient.Builder()
           .cache(new Cache(cacheDir, CACHE_SIZE * MEBIBYTE))
           .proxy(getProxy(httpEndpoint))
           .build();
       }
       else {
-        log.fine(Messages.PLP_OkHttpUtils_fine_noJenkinsInstance());
+        log.fine(Messages.PLP_OkHttpUtils_fine_NoJenkinsInstance());
       }
     }
     catch (Exception ex) {
-      log.warning(Messages.PLP_OkHttpUtils_warn_cacheIOException());
+      log.warning(Messages.PLP_OkHttpUtils_warn_CacheIOException());
       log.fine("Cache creation failed with: " + ex.getClass().getName() + '\n'
                  + "EX Message: " + ex.getMessage());
     }
