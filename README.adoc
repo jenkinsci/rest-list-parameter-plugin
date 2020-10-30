@@ -30,10 +30,13 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 * Specify any REST/Web endpoint that returns either a Json or XML response with values to select from for a build
 * Authenticate against the endpoint if required (either with `BASIC` or `BEARER` authentication)
 * Filter/Pars the values of the web response with Json-Path or xPath (depending on MIME type)
-* Filter the already filtered/parsed values via a REGEX
-* Set the per default preselected value
+* Set a per-selected default value (as long as that value is within the received value list)
 * User-friendly error communication
+* Response value caching
 * Advanced configuration validation
+* Optional value post processing
+** Filter the already parsed values via a REGEX
+** Apply a sort order to the values
 
 [#configuration]
 == Configuration
@@ -87,6 +90,20 @@ image::.media/config-valid.png[Successful Configuiration Validation]
 
 image::.media/config-invalid.png[Faild Configuiration Validation]
 
+[#valueCaching]
+=== Value Caching
+
+NOTE: Added in v1.2.0
+
+The ability to use value caching allows for great performance improvements in cases of repetitive building and querying the same REST endpoints.
+Additionally, it drastically decreases the amount of endpoint queries, which is especially useful for rate limited endpoints.
+Per default caching is disabled for new and old `REST List Parameter`, but can be activated at any time by setting how many minutes the values should stay cached for.
+
+Additionally, there are global configuration values now, that give the user control over the global cache size _(default 50 MiB)_, as well as the default value for the cache max age _(default 0 minutes)_.
+These values can be overwritten within the UI or via the link:https://github.com/jenkinsci/configuration-as-code-plugin[ConfigurationAsCode] plugin and applying a config link:#jcasc[with this] added.
+
+image::.media/global-config.png[Global Config]
+
 [#valueOrder]
 === Optional Value Ordering
 
@@ -101,7 +118,7 @@ image::.media/valueOrder.png["AdvancedOption" Apply Sort Order]
 [#pipeline-parameter]
 === Definition in Pipeline
 
-[source,goovy]
+[source,groovy]
 ----
 pipeline {
   agent any
@@ -113,8 +130,10 @@ pipeline {
       credentialId: '',
       mimeType: 'APPLICATION_JSON',
       valueExpression: '$.*',
+      cacheTime: 10,    // optional
       defaultValue: '', // optional
-      filter: '.*' // optional
+      filter: '.*',     // optional
+      valueOrder: 'ASC' // optional
     )
   }
 
@@ -131,7 +150,7 @@ pipeline {
 [#jobdsl-parameter]
 === Definition in JobDsl
 
-[source,goovy]
+[source,groovy]
 ----
 pipelineJob('DemoJob') {
   parameters {
@@ -142,8 +161,10 @@ pipelineJob('DemoJob') {
       credentialId('credID')
       mimeType('APPLICATION_JSON')
       valueExpression('$.*')
-      defaultValue('') // optional
-      filter('.*') // optional
+      cacheTime(10)       // optional
+      defaultValue('')    // optional
+      filter('.*')        // optional
+      valueOrder('NONE')  // optional
     }
   }
   definition {
@@ -165,6 +186,19 @@ pipelineJob('DemoJob') {
     }
   }
 }
+----
+
+[#jcasc]
+=== Set Global Options via JCasC
+
+[source,yaml]
+----
+unclassified:
+  # ...
+  restListParam:
+    cacheSize: 50 # in mebibyte, needs to be greater than 0
+    cacheTime: 0  # in minutes, 0 => per default don't use cache
+  # ...
 ----
 
 [#contributing]

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:section title="${%config.name}">
+    <f:entry title="${%config.cacheSize}" field="cacheSize">
+      <f:number default="50" checkMethod="post"/>
+    </f:entry>
+    <f:entry title="${%config.cacheTime}" field="cacheTime">
+      <f:number default="0" checkMethod="post"/>
+    </f:entry>
+  </f:section>
+</j:jelly>

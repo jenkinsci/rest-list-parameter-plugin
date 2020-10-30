@@ -30,6 +30,7 @@ import java.util.Optional;
 
 public class RestListParameterDefinition extends SimpleParameterDefinition {
   private static final long serialVersionUID = 3453376762337829455L;
+  private static final RestListParameterGlobalConfig config = RestListParameterGlobalConfig.get();
 
   private final String restEndpoint;
   private final String credentialId;
@@ -38,6 +39,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   private ValueOrder valueOrder;
   private String defaultValue;
   private String filter;
+  private Integer cacheTime;
   private String errorMsg;
   private List<String> values;
 
@@ -49,7 +51,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
                                      final MimeType mimeType,
                                      final String valueExpression)
   {
-    this(name, description, restEndpoint, credentialId, mimeType, valueExpression, ValueOrder.NONE, ".*", "");
+    this(name, description, restEndpoint, credentialId, mimeType, valueExpression,
+         ValueOrder.NONE, ".*", config.getCacheTime(), "");
   }
 
   public RestListParameterDefinition(final String name,
@@ -60,6 +63,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
                                      final String valueExpression,
                                      final ValueOrder valueOrder,
                                      final String filter,
+                                     final Integer cacheTime,
                                      final String defaultValue)
   {
     super(name, description);
@@ -70,6 +74,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
     this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
+    this.cacheTime = cacheTime != null ? cacheTime : config.getCacheTime();
     this.errorMsg = "";
     this.values = Collections.emptyList();
   }
@@ -100,12 +105,21 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   }
 
   public ValueOrder getValueOrder() {
-    return valueOrder;
+    return valueOrder != null ? valueOrder : ValueOrder.NONE;
   }
 
   @DataBoundSetter
   public void setFilter(final String filter) {
     this.filter = filter;
+  }
+
+  public Integer getCacheTime() {
+    return cacheTime != null ? cacheTime : config.getCacheTime();
+  }
+
+  @DataBoundSetter
+  public void setCacheTime(final Integer cacheTime) {
+    this.cacheTime = cacheTime;
   }
 
   public String getDefaultValue() {
@@ -130,12 +144,13 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
 
       ResultContainer<List<String>> container = RestValueService.get(
-        restEndpoint,
+        getRestEndpoint(),
         credentials.orElse(null),
-        mimeType,
-        valueExpression,
-        filter,
-        valueOrder);
+        getMimeType(),
+        getCacheTime(),
+        getValueExpression(),
+        getFilter(),
+        getValueOrder());
 
       setErrorMsg(container.getErrorMsg().orElse(""));
       values = container.getValue();
@@ -149,7 +164,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       RestListParameterValue value = (RestListParameterValue) defaultValue;
       return new RestListParameterDefinition(
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
-        getValueExpression(), getValueOrder(), getFilter(), value.getValue());
+        getValueExpression(), getValueOrder(), getFilter(), getCacheTime(), value.getValue());
     }
     else {
       return this;
@@ -235,6 +250,10 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
       return Messages.RLP_DescriptorImpl_DisplayName();
     }
 
+    public Integer getDefaultCacheTime() {
+      return config.getCacheTime();
+    }
+
     @POST
     public FormValidation doCheckRestEndpoint(@AncestorInPath final Item context,
                                               @QueryParameter final String value,
@@ -295,6 +314,24 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     }
 
     @POST
+    public FormValidation doCheckCacheTime(@AncestorInPath final Item context,
+                                           @QueryParameter final Integer cacheTime)
+    {
+      if (context == null) {
+        Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+      }
+      else {
+        context.checkPermission(Item.CONFIGURE);
+      }
+
+      if (cacheTime != null && cacheTime >= 0) {
+        return FormValidation.ok();
+      }
+
+      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_CacheTime());
+    }
+
+    @POST
     public FormValidation doTestConfiguration(@AncestorInPath final Item context,
                                               @QueryParameter final String restEndpoint,
                                               @QueryParameter final String credentialId,
@@ -328,6 +365,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
         restEndpoint,
         credentials.orElse(null),
         mimeType,
+        0,
         valueExpression,
         filter,
         valueOrder);
