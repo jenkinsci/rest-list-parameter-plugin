@@ -2,6 +2,7 @@ package io.jenkins.plugins.restlistparam.util;
 
 import hudson.FilePath;
 import io.jenkins.plugins.restlistparam.Messages;
+import io.jenkins.plugins.restlistparam.RestListParameterGlobalConfig;
 import jenkins.model.Jenkins;
 import okhttp3.Cache;
 import okhttp3.CacheControl;
@@ -20,7 +21,6 @@ public class OkHttpUtils {
   private static final String PARAMETERS = "parameters";
   private static final String PARAMETER_ID = "restListParam";
   private static final long MEBIBYTE = 1024L * 1024L;
-  private static final long CACHE_SIZE = 50L;
 
   private OkHttpUtils() {
     throw new IllegalStateException("Utility class");
@@ -37,6 +37,7 @@ public class OkHttpUtils {
   public static OkHttpClient getClientWithProxyAndCache(final String httpEndpoint) {
     try {
       if (jenkins != null) {
+        final RestListParameterGlobalConfig config = RestListParameterGlobalConfig.get();
         FilePath parameterUserContent = jenkins.getRootPath()
                                                .child(PARAMETERS)
                                                .child(PARAMETER_ID);
@@ -46,9 +47,9 @@ public class OkHttpUtils {
         }
 
         File cacheDir = new File(parameterUserContent.toURI().getPath(), "okhttp_cache");
-        log.fine(Messages.PLP_OkHttpUtils_fine_CacheCreationSuccess(CACHE_SIZE));
+        log.fine(Messages.PLP_OkHttpUtils_fine_CacheCreationSuccess(config.getCacheSize()));
         return new OkHttpClient.Builder()
-          .cache(new Cache(cacheDir, CACHE_SIZE * MEBIBYTE))
+          .cache(new Cache(cacheDir, config.getCacheSize() * MEBIBYTE))
           .proxy(getProxy(httpEndpoint))
           .build();
       }

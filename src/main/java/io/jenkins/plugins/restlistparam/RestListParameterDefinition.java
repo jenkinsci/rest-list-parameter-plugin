@@ -30,6 +30,7 @@ import java.util.Optional;
 
 public class RestListParameterDefinition extends SimpleParameterDefinition {
   private static final long serialVersionUID = 3453376762337829455L;
+  private static final RestListParameterGlobalConfig config = RestListParameterGlobalConfig.get();
 
   private final String restEndpoint;
   private final String credentialId;
@@ -50,7 +51,8 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
                                      final MimeType mimeType,
                                      final String valueExpression)
   {
-    this(name, description, restEndpoint, credentialId, mimeType, valueExpression, ValueOrder.NONE, ".*", 0, "");
+    this(name, description, restEndpoint, credentialId, mimeType, valueExpression,
+         ValueOrder.NONE, ".*", config.getCacheTime(), "");
   }
 
   public RestListParameterDefinition(final String name,
@@ -72,7 +74,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
     this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
-    this.cacheTime = cacheTime != null ? cacheTime : 0;
+    this.cacheTime = cacheTime != null ? cacheTime : config.getCacheTime();
     this.errorMsg = "";
     this.values = Collections.emptyList();
   }
@@ -112,7 +114,7 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
   }
 
   public Integer getCacheTime() {
-    return cacheTime != null ? cacheTime : 0;
+    return cacheTime != null ? cacheTime : config.getCacheTime();
   }
 
   @DataBoundSetter
@@ -246,6 +248,10 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
     @Nonnull
     public String getDisplayName() {
       return Messages.RLP_DescriptorImpl_DisplayName();
+    }
+
+    public Integer getDefaultCacheTime() {
+      return config.getCacheTime();
     }
 
     @POST
