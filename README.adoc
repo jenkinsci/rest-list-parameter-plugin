@@ -99,7 +99,10 @@ The ability to use value caching allows for great performance improvements in ca
 Additionally, it drastically decreases the amount of endpoint queries, which is especially useful for rate limited endpoints.
 Per default caching is disabled for new and old `REST List Parameter`, but can be activated at any time by setting how many minutes the values should stay cached for.
 
-// TODO: ADD GRAPHIC
+Additionally, there are global configuration values now, that give the user control over the global cache size _(default 50 MiB)_, as well as the default value for the cache max age _(default 0 minutes)_.
+These values can be overwritten within the UI or via the link:https://github.com/jenkinsci/configuration-as-code-plugin[ConfigurationAsCode] plugin and applying a config link:#jcasc[with this] added.
+
+image::.media/global-config.png[Global Config]
 
 [#valueOrder]
 === Optional Value Ordering
@@ -114,8 +117,8 @@ image::.media/valueOrder.png["AdvancedOption" Apply Sort Order]
 
 [#pipeline-parameter]
 === Definition in Pipeline
-// TODO: UPDATE THIS EXAMPLE
-[source,goovy]
+
+[source,groovy]
 ----
 pipeline {
   agent any
@@ -127,8 +130,10 @@ pipeline {
       credentialId: '',
       mimeType: 'APPLICATION_JSON',
       valueExpression: '$.*',
+      cacheTime: 10,    // optional
       defaultValue: '', // optional
-      filter: '.*' // optional
+      filter: '.*',     // optional
+      valueOrder: 'ASC' // optional
     )
   }
 
@@ -144,8 +149,8 @@ pipeline {
 
 [#jobdsl-parameter]
 === Definition in JobDsl
-// TODO: UPDATE THIS EXAMPLE
-[source,goovy]
+
+[source,groovy]
 ----
 pipelineJob('DemoJob') {
   parameters {
@@ -156,8 +161,10 @@ pipelineJob('DemoJob') {
       credentialId('credID')
       mimeType('APPLICATION_JSON')
       valueExpression('$.*')
-      defaultValue('') // optional
-      filter('.*') // optional
+      cacheTime(10)       // optional
+      defaultValue('')    // optional
+      filter('.*')        // optional
+      valueOrder('NONE')  // optional
     }
   }
   definition {
@@ -179,6 +186,19 @@ pipelineJob('DemoJob') {
     }
   }
 }
+----
+
+[#jcasc]
+=== Set Global Options via JCasC
+
+[source,yaml]
+----
+unclassified:
+  # ...
+  restListParam:
+    cacheSize: 50 # in mebibyte, needs to be greater than 0
+    cacheTime: 0  # in minutes, 0 => per default don't use cache
+  # ...
 ----
 
 [#contributing]
