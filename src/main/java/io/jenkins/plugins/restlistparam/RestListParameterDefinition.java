@@ -207,14 +207,11 @@ public class RestListParameterDefinition extends SimpleParameterDefinition {
 
   @Override
   public boolean equals(Object obj) {
+    if (obj == null || this.getClass() != obj.getClass()) {
+      return false;
+    }
     if (this == obj) {
       return true;
-    }
-    if (this.getClass() != getClass()) {
-      return false;
-    }
-    if (obj == null || getClass() != obj.getClass()) {
-      return false;
     }
     RestListParameterDefinition other = (RestListParameterDefinition) obj;
     if (!Objects.equals(getName(), other.getName())) {
