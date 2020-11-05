@@ -12,7 +12,7 @@ import org.kohsuke.stapler.verb.POST;
 
 @Extension(dynamicLoadable = YesNoMaybe.YES)
 @Symbol({"restListParam", "restListParamConfig"})
-public class RestListParameterGlobalConfig extends GlobalConfiguration {
+public final class RestListParameterGlobalConfig extends GlobalConfiguration {
 
   /**
    * The default for {@link #cacheSize}.
@@ -29,6 +29,15 @@ public class RestListParameterGlobalConfig extends GlobalConfiguration {
 
   public RestListParameterGlobalConfig() {
     load();
+  }
+
+  /**
+   * Get the current RestListParameter global configuration.
+   *
+   * @return the RestListParameter configuration, or {@code null} if Jenkins has been shut down
+   */
+  public static RestListParameterGlobalConfig get() {
+    return ExtensionList.lookupSingleton(RestListParameterGlobalConfig.class);
   }
 
   public Long getCacheSize() {
@@ -67,14 +76,5 @@ public class RestListParameterGlobalConfig extends GlobalConfiguration {
     }
 
     return FormValidation.error(Messages.RLP_GlobalConfig_ValidationErr_CacheTime());
-  }
-
-  /**
-   * Get the current RestListParameter global configuration.
-   *
-   * @return the RestListParameter configuration, or {@code null} if Jenkins has been shut down
-   */
-  public static RestListParameterGlobalConfig get() {
-    return ExtensionList.lookupSingleton(RestListParameterGlobalConfig.class);
   }
 }

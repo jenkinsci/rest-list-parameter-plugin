@@ -15,7 +15,7 @@ import java.util.Locale;
 /**
  * {@link ParameterValue} created from {@link RestListParameterDefinition}.
  */
-public class RestListParameterValue extends ParameterValue {
+public final class RestListParameterValue extends ParameterValue {
   @Exported(visibility = 4)
   @Restricted(NoExternalUse.class)
   public String value;

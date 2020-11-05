@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RestListParameterDefinition extends SimpleParameterDefinition {
+public final class RestListParameterDefinition extends SimpleParameterDefinition {
   private static final long serialVersionUID = 3453376762337829455L;
   private static final RestListParameterGlobalConfig config = RestListParameterGlobalConfig.get();
 
