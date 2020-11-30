@@ -10,6 +10,11 @@ updates:
       - "h1dden-da3m0n"
     ignore:
       - dependency-name: "org.jenkins-ci.main:jenkins-core"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -19,3 +24,8 @@ updates:
       time: "10:00"
     assignees:
       - "h1dden-da3m0n"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
