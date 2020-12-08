@@ -23,7 +23,6 @@ public class RestValueServiceTest {
            ValueOrder.NONE);
     Assert.assertFalse(test.getErrorMsg().isPresent());
     Assert.assertEquals(3, test.getValue().size());
-    Assert.assertArrayEquals(new String[]{"v10.6.4", "v10.6.3", "v10.6.2"}, test.getValue().toArray());
   }
 
   @Test
@@ -39,6 +38,5 @@ public class RestValueServiceTest {
     Assert.assertNotNull(test);
     Assert.assertTrue(test.getErrorMsg().isPresent());
     Assert.assertEquals(0, test.getValue().size());
-    Assert.assertArrayEquals(new String[]{}, test.getValue().toArray());
   }
 }
