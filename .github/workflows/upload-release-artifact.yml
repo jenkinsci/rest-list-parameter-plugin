@@ -5,7 +5,7 @@ on:
     types: [ published ]
 
 env:
-  PROJECT: rest-list-parameter
+  ARTIFACT_ID: rest-list-parameter
 
 jobs:
   build-upload-artifact:
@@ -34,8 +34,8 @@ jobs:
         id: set-variables
         run: |
           version=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          asset_path="target/${PROJECT}.hpi"
-          asset_name="${PROJECT}-${version}.hpi"
+          asset_path="target/${ARTIFACT_ID}.hpi"
+          asset_name="${ARTIFACT_ID}-${version}.hpi"
           echo "Version is ${version}"
           echo "Asset_Path is ${asset_path}"
           echo "Asset_Name is ${asset_name}"
