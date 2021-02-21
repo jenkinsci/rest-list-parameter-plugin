@@ -4,6 +4,7 @@
 :toc-title:
 
 image:https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/badge/icon[link="https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/"]
+image:https://img.shields.io/codefactor/grade/github/jenkinsci/rest-list-parameter-plugin/main.svg[CodeFactor Grade,link="https://www.codefactor.io/repository/github/jenkinsci/rest-list-parameter-plugin"]
 image:https://img.shields.io/github/license/jenkinsci/rest-list-parameter-plugin.svg?color=green[link="https://github.com/jenkinsci/rest-list-parameter-plugin/blob/main/LICENSE"]
 image:https://img.shields.io/maintenance/yes/2021.svg[link="https://github.com/jenkinsci/rest-list-parameter-plugin"]
 image:https://img.shields.io/github/contributors/jenkinsci/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/jenkinsci/rest-list-parameter-plugin/graphs/contributors"]
