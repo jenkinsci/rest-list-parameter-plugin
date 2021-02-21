@@ -17,6 +17,11 @@
         </j:forEach>
       </select>
 
+      <div class="tr" display="${it.errorMsg == '' ? 'none' : ''}">
+        <div class="${it.errorMsg == '' ? '' : 'error'}">
+          ${it.errorMsg}
+        </div>
+      </div>
     </div>
   </f:entry>
 
