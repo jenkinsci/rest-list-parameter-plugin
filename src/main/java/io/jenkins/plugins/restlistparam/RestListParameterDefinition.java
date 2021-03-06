@@ -140,21 +140,19 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   }
 
   public List<String> getValues() {
-    if (values == null || values.isEmpty()) {
-      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
 
-      ResultContainer<List<String>> container = RestValueService.get(
-        getRestEndpoint(),
-        credentials.orElse(null),
-        getMimeType(),
-        getCacheTime(),
-        getValueExpression(),
-        getFilter(),
-        getValueOrder());
+    ResultContainer<List<String>> container = RestValueService.get(
+      getRestEndpoint(),
+      credentials.orElse(null),
+      getMimeType(),
+      getCacheTime(),
+      getValueExpression(),
+      getFilter(),
+      getValueOrder());
 
-      setErrorMsg(container.getErrorMsg().orElse(""));
-      values = container.getValue();
-    }
+    setErrorMsg(container.getErrorMsg().orElse(""));
+    values = container.getValue();
     return values;
   }
 
@@ -194,6 +192,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     }
   }
 
+  @Override
   public boolean isValid(ParameterValue value) {
     return values.contains(((RestListParameterValue) value).getValue());
   }
