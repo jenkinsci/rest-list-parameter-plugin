@@ -2,7 +2,7 @@ name: Upload release artifact
 
 on:
   release:
-    types: [ published ]
+    types: [ released ]
 
 env:
   ARTIFACT_ID: rest-list-parameter
