@@ -1,15 +1,23 @@
 <!-- this is the page fragment displayed when trying to run the job with a RLP -->
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core"
+         xmlns:st="jelly:stapler"
          xmlns:f="/lib/form">
+
+  <st:adjunct includes="io.jenkins.plugins.jquery3"/>
+
+  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2.min.css"/>
+  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
+  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-theming-patch.css"/>
+  <script type="text/javascript" src="${resURL}/plugin/rest-list-parameter/js/select2.min.js"></script>
 
   <f:entry title="${it.name}" description="${it.description}">
     <!-- this div is required because of ParametersDefinitionProperty.java#117 -->
     <div name="parameter" description="${it.description}">
-      <input type="hidden" name="name" value="${it.name}" />
-      <input type="hidden" name="description" value="${it.description}" />
+      <input type="hidden" name="name" value="${it.name}"/>
+      <input type="hidden" name="description" value="${it.description}"/>
 
-      <select name="value" style="min-width: 18rem;">
+      <select id="${it.name}-select" class="setting-input" name="value">
         <j:forEach var="value" items="${it.values}" varStatus="loop">
           <f:option value="${value}" selected="${value.equals(it.defaultValue)}">
             ${value}
@@ -25,13 +33,14 @@
     </div>
   </f:entry>
 
-  <tr display="${it.errorMsg == '' ? 'none' : ''}">
-    <td colspan="2"></td>
-    <td class="${it.errorMsg == '' ? '' : 'error'}"
-         style="margin-top: 0.2rem;"
-         name="errorMsg">
-      ${it.errorMsg}
-    </td>
-  </tr>
+  <script type="text/javascript">
+    jQuery3.noConflict();
+    jQuery3(document).ready(function () {
+      jQuery3("#${it.name}-select").select2({
+        placeholder: "Select an option",
+        theme: 'bootstrap4',
+      });
+    });
+  </script>
 
 </j:jelly>
