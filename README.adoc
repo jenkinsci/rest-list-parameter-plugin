@@ -4,6 +4,7 @@
 :toc-title:
 
 image:https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/badge/icon[link="https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/"]
+image:https://img.shields.io/codefactor/grade/github/jenkinsci/rest-list-parameter-plugin/main.svg[CodeFactor Grade,link="https://www.codefactor.io/repository/github/jenkinsci/rest-list-parameter-plugin"]
 image:https://img.shields.io/github/license/jenkinsci/rest-list-parameter-plugin.svg?color=green[link="https://github.com/jenkinsci/rest-list-parameter-plugin/blob/main/LICENSE"]
 image:https://img.shields.io/maintenance/yes/2021.svg[link="https://github.com/jenkinsci/rest-list-parameter-plugin"]
 image:https://img.shields.io/github/contributors/jenkinsci/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/jenkinsci/rest-list-parameter-plugin/graphs/contributors"]
@@ -217,6 +218,26 @@ For further contributing info please have a look at the JenkinsCI link:https://g
 image::https://www.gnu.org/graphics/gplv3-or-later.svg[link="https://opensource.org/licenses/GPL-3.0"]
 
 Just if the badge from `shields.io` and the link:LICENSE[] file do not make it obvious enough, this project is licenced under the link:https://opensource.org/licenses/GPL-3.0[GPLv3] or later.
+
+[#bundled-project-sources]
+== Bundled Project Sources
+
+NOTE: Bundled as of v1.3.0
+
+[cols="2,^1,^1,5"]
+|===
+|Project |Version |Licence |Description
+
+|link:https://github.com/select2/select2[Select2]
+|`v4.0.13`
+|link:https://github.com/select2/select2/blob/4.0.13/LICENSE.md[MIT]
+|An amazingly simple to use jQuery replacement for select boxes (used to offer a filterable select dropdown)
+
+|link:https://github.com/ttskch/select2-bootstrap4-theme[Select2-Bootstrap4-Theme]
+|`v1.5.2`
+|link:https://github.com/ttskch/select2-bootstrap4-theme/blob/1.5.2/LICENSE[MIT]
+|A Select2 theme for when used in Bootstrap4 apps
+|===
 
 [#development]
 == Development
