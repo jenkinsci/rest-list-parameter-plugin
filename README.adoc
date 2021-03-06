@@ -222,6 +222,8 @@ Just if the badge from `shields.io` and the link:LICENSE[] file do not make it o
 [#bundled-project-sources]
 == Bundled Project Sources
 
+NOTE: Bundled as of v1.3.0
+
 [cols="2,^1,^1,5"]
 |===
 |Project |Version |Licence |Description
