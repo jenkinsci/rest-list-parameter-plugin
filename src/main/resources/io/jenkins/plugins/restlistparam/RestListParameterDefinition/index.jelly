@@ -22,13 +22,30 @@
         </j:forEach>
       </select>
 
-      <div class="tr" display="${it.errorMsg == '' ? 'none' : ''}">
-        <div class="${it.errorMsg == '' ? '' : 'error'}">
-          ${it.errorMsg}
-        </div>
-      </div>
+      <j:choose>
+        <j:when test="${divBasedFormLayout}">
+          <div class="tr" display="${it.errorMsg == '' ? 'none' : ''}">
+            <div class="${it.errorMsg == '' ? '' : 'error'}">
+              ${it.errorMsg}
+            </div>
+          </div>
+        </j:when>
+      </j:choose>
     </div>
   </f:entry>
+
+  <j:choose>
+    <j:when test="${!divBasedFormLayout}">
+      <tr display="${it.errorMsg == '' ? 'none' : ''}">
+        <td colspan="2"></td>
+        <td class="${it.errorMsg == '' ? '' : 'error'}"
+            style="margin-top: 0.2rem;"
+            name="errorMsg">
+          ${it.errorMsg}
+        </td>
+      </tr>
+    </j:when>
+  </j:choose>
 
   <script type="text/javascript">
     jQuery.noConflict();
