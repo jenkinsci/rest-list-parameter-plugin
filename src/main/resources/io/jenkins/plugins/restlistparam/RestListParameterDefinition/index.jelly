@@ -1,10 +1,7 @@
 <!-- this is the page fragment displayed when trying to run the job with a RLP -->
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core"
-         xmlns:st="jelly:stapler"
          xmlns:f="/lib/form">
-
-  <st:adjunct includes="io.jenkins.plugins.jquery3"/>
 
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2.min.css"/>
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
@@ -34,9 +31,9 @@
   </f:entry>
 
   <script type="text/javascript">
-    jQuery3.noConflict();
-    jQuery3(document).ready(function () {
-      jQuery3("#${it.name}-select").select2({
+    jQuery.noConflict();
+    jQuery(document).ready(function () {
+      jQuery("#${it.name}-select").select2({
         placeholder: "Select an option",
         theme: 'bootstrap4',
       });
