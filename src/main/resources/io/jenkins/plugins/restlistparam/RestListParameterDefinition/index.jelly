@@ -5,6 +5,7 @@
          xmlns:f="/lib/form">
 
   <st:adjunct includes="io.jenkins.plugins.jquery3"/>
+  <j:set var="id" value="${h.generateId()}"/>
 
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2.min.css"/>
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
@@ -17,7 +18,7 @@
       <input type="hidden" name="name" value="${it.name}"/>
       <input type="hidden" name="description" value="${it.description}"/>
 
-      <select id="${it.name}-select" class="setting-input" name="value">
+      <select id="${id}-select" class="setting-input" name="value">
         <j:forEach var="value" items="${it.values}" varStatus="loop">
           <f:option value="${value}" selected="${value.equals(it.defaultValue)}">
             ${value}
@@ -53,7 +54,7 @@
   <script type="text/javascript">
     jQuery3.noConflict();
     jQuery3(document).ready(function () {
-      jQuery3("#${it.name}-select").select2({
+      jQuery3("#${id}-select").select2({
         placeholder: "Select an option",
         theme: 'bootstrap4',
       });
