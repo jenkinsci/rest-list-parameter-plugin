@@ -6,7 +6,7 @@
 image:https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/badge/icon[link="https://ci.jenkins.io/job/Plugins/job/rest-list-parameter-plugin/job/main/"]
 image:https://img.shields.io/codefactor/grade/github/jenkinsci/rest-list-parameter-plugin/main.svg[CodeFactor Grade,link="https://www.codefactor.io/repository/github/jenkinsci/rest-list-parameter-plugin"]
 image:https://img.shields.io/github/license/jenkinsci/rest-list-parameter-plugin.svg?color=green[link="https://github.com/jenkinsci/rest-list-parameter-plugin/blob/main/LICENSE"]
-image:https://img.shields.io/maintenance/yes/2021.svg[link="https://github.com/jenkinsci/rest-list-parameter-plugin"]
+image:https://img.shields.io/maintenance/yes/2021.svg[link="https://github.com/jenkinsci/rest-list-parameter-plugin"] +
 image:https://img.shields.io/github/contributors/jenkinsci/rest-list-parameter-plugin.svg?color=blue[link="https://github.com/jenkinsci/rest-list-parameter-plugin/graphs/contributors"]
 image:https://img.shields.io/jenkins/plugin/i/rest-list-parameter.svg?color=blue&label=installations[link="https://plugins.jenkins.io/rest-list-parameter"]
 image:https://img.shields.io/github/release/jenkinsci/rest-list-parameter-plugin.svg?label=changelog[link="https://github.com/jenkinsci/rest-list-parameter-plugin/releases/latest"]
@@ -224,7 +224,7 @@ Just if the badge from `shields.io` and the link:LICENSE[] file do not make it o
 
 NOTE: Bundled as of v1.3.0
 
-[cols="2,^1,^1,5"]
+[cols="1,^0,^0,2"]
 |===
 |Project |Version |Licence |Description
 
