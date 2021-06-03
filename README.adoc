@@ -228,15 +228,16 @@ NOTE: Bundled as of v1.3.0
 |===
 |Project |Version |Licence |Description
 
-|link:https://github.com/select2/select2[Select2]
-|`v4.0.13`
-|link:https://github.com/select2/select2/blob/4.0.13/LICENSE.md[MIT]
-|An amazingly simple to use jQuery replacement for select boxes (used to offer a filterable select dropdown)
+|[.line-through]#link:https://github.com/select2/select2[Select2]#
+|[.line-through]#`v4.0.13`#
+|[.line-through]#link:https://github.com/select2/select2/blob/4.0.13/LICENSE.md[MIT]#
+|[.line-through]#An amazingly simple to use jQuery replacement for select boxes (used to offer a filterable select dropdown)#
+Replaced with the link:https://github.com/jenkinsci/select2-api-plugin[Select2 Api Plugin] in 1.4.x
 
 |link:https://github.com/ttskch/select2-bootstrap4-theme[Select2-Bootstrap4-Theme]
 |`v1.5.2`
 |link:https://github.com/ttskch/select2-bootstrap4-theme/blob/1.5.2/LICENSE[MIT]
-|A Select2 theme for when used in Bootstrap4 apps
+|A CSS theme for Select2, when used in Bootstrap4 apps
 |===
 
 [#development]

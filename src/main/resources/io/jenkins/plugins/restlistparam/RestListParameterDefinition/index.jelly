@@ -5,12 +5,11 @@
          xmlns:f="/lib/form">
 
   <st:adjunct includes="io.jenkins.plugins.jquery3"/>
+  <st:adjunct includes="io.jenkins.plugins.select2"/>
   <j:set var="id" value="${h.generateId()}"/>
 
-  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2.min.css"/>
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-theming-patch.css"/>
-  <script type="text/javascript" src="${resURL}/plugin/rest-list-parameter/js/select2.min.js"></script>
 
   <f:entry title="${it.name}" description="${it.description}">
     <!-- this div is required because of ParametersDefinitionProperty.java#117 -->
