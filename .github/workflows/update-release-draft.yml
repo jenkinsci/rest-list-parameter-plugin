@@ -12,7 +12,5 @@ jobs:
     steps:
       - name: Update Release Draft
         uses: release-drafter/release-drafter@v5.15.0
-        with:
-          publish: ${{ contains(github.event.head_commit.message, '[maven-release-plugin] prepare release') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
