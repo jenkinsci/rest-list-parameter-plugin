@@ -20,19 +20,26 @@ public final class RestListParameterValue extends ParameterValue {
   @Restricted(NoExternalUse.class)
   public String value;
 
+  @Exported(visibility = 4)
+  @Restricted(NoExternalUse.class)
+  public String displayValue;
+
   @DataBoundConstructor
   public RestListParameterValue(String name,
-                                String value)
+                                String value,
+                                String displayValue)
   {
-    this(name, value, null);
+    this(name, value, displayValue, null);
   }
 
   public RestListParameterValue(String name,
                                 String value,
+                                String displayValue,
                                 String description)
   {
     super(name, description);
     this.value = value;
+    this.displayValue = displayValue;
   }
 
   /**

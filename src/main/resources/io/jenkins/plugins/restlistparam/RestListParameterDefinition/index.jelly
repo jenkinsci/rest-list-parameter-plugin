@@ -20,7 +20,7 @@
       <select id="${id}-select" class="setting-input" name="value">
         <j:forEach var="value" items="${it.values}" varStatus="loop">
           <f:option value="${value}" selected="${value.equals(it.defaultValue)}">
-            ${value}
+            ${value.displayValue}
           </f:option>
         </j:forEach>
       </select>

@@ -22,6 +22,10 @@
     <f:textbox default="" checkMethod="post" />
   </f:entry>
 
+  <f:entry title="${%parameter.displayExpression}" field="displayExpression">
+    <f:textbox default="" checkMethod="post" />
+  </f:entry>
+
   <!-- Some advances options -->
   <f:advanced>
     <f:section title="${%parameter.advanced}" >
