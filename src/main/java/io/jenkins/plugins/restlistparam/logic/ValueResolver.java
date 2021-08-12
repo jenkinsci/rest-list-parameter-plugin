@@ -1,5 +1,6 @@
 package io.jenkins.plugins.restlistparam.logic;
 
+import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
@@ -121,7 +122,7 @@ public class ValueResolver {
           .map(JsonPath::parse)
           .map(context -> context.read("$"))
           .map(read -> (read instanceof Map) ? JsonPath.parse(read).jsonString() : (String)read)
-          .map(value -> new Item(value, JsonPath.parse(value).read(displayExpression)))
+          .map(value -> new Item(value, parseDisplayValue(displayExpression, JsonPath.parse(value))))
           .collect(Collectors.toList()));
 
       } else {
@@ -144,6 +145,16 @@ public class ValueResolver {
     }
 
     return container;
+  }
+
+  private static String parseDisplayValue(String displayExpression, DocumentContext parse) {
+    Object read = parse.read(displayExpression);
+
+    if(read instanceof String) {
+      return (String)read;
+    } else {
+      return JsonPath.parse(read).jsonString();
+    }
   }
 
   /**

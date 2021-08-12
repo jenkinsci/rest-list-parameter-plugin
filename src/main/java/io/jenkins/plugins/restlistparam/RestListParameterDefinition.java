@@ -399,7 +399,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
       // values should NEVER be empty here
       // due to all the filtering and error handling done in the RestValueService
-      return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), values.get(0)));
+      return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), values.get(0).getDisplayValue()));
     }
   }
 }

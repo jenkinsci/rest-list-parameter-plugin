@@ -23,7 +23,7 @@
   </f:entry>
 
   <f:entry title="${%parameter.displayExpression}" field="displayExpression">
-    <f:textbox default="" checkMethod="post" />
+    <f:textbox default="$" checkMethod="post" />
   </f:entry>
 
   <!-- Some advances options -->
@@ -49,7 +49,7 @@
 
   <f:validateButton
       title="${%parameter.testConfig}" progress="${%parameter.testing}"
-      method="testConfiguration" with="restEndpoint,credentialId,mimeType,valueExpression,filter,valueOrder" />
+      method="testConfiguration" with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder" />
 
   <f:entry title="${%parameter.description}" field="description">
     <f:textarea />
