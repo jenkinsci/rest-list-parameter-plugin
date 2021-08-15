@@ -4,7 +4,7 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.restlistparam.Messages;
-import io.jenkins.plugins.restlistparam.model.Item;
+import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
@@ -50,16 +50,16 @@ public class RestValueService {
    * @param order             Set a {@link ValueOrder} to optionally reorder the values
    * @return A {@link ResultContainer} that capsules either the desired values or a user friendly error message.
    */
-  public static ResultContainer<List<Item>> get(final String restEndpoint,
-                                                final StandardCredentials credentials,
-                                                final MimeType mimeType,
-                                                final Integer cacheTime,
-                                                final String valueExpression,
-                                                final String displayExpression,
-                                                final String filter,
-                                                final ValueOrder order)
+  public static ResultContainer<List<ValueItem>> get(final String restEndpoint,
+                                                     final StandardCredentials credentials,
+                                                     final MimeType mimeType,
+                                                     final Integer cacheTime,
+                                                     final String valueExpression,
+                                                     final String displayExpression,
+                                                     final String filter,
+                                                     final ValueOrder order)
   {
-    ResultContainer<List<Item>> valueList = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<ValueItem>> valueList = new ResultContainer<>(Collections.emptyList());
     ResultContainer<String> rawValues = getValueStringFromRestEndpoint(restEndpoint, credentials, mimeType, cacheTime);
     Optional<String> rawValueError = rawValues.getErrorMsg();
 
@@ -231,12 +231,12 @@ public class RestValueService {
    * @param displayExpression Derives the value to be displayed to the user parsed by value expression
    * @return A {@link ResultContainer} capsuling the results of the applied expression or an error message
    */
-  private static ResultContainer<List<Item>> convertToValuesList(final MimeType mimeType,
-                                                                   final String valueString,
-                                                                   final String valueExpression,
-                                                                   final String displayExpression)
+  private static ResultContainer<List<ValueItem>> convertToValuesList(final MimeType mimeType,
+                                                                      final String valueString,
+                                                                      final String valueExpression,
+                                                                      final String displayExpression)
   {
-    ResultContainer<List<Item>> container;
+    ResultContainer<List<ValueItem>> container;
 
     switch (mimeType) {
       case APPLICATION_JSON:
@@ -260,14 +260,14 @@ public class RestValueService {
    * @param order  The Order to apply (if any)
    * @return A {@link ResultContainer} capsuling a filtered string list or a user friendly error message
    */
-  private static ResultContainer<List<Item>> filterAndSortValues(final List<Item> values,
-                                                                   final String filter,
-                                                                   final ValueOrder order)
+  private static ResultContainer<List<ValueItem>> filterAndSortValues(final List<ValueItem> values,
+                                                                      final String filter,
+                                                                      final ValueOrder order)
   {
-    ResultContainer<List<Item>> container = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
-      List<Item> updatedValues;
+      List<ValueItem> updatedValues;
 
       if (isFilterSet(filter) && !isOrderSet(order)) {
         updatedValues = values.stream()

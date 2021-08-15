@@ -3,14 +3,14 @@ package io.jenkins.plugins.restlistparam.model;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class Item implements Comparable<Item>, Serializable {
+public class ValueItem implements Comparable<ValueItem>, Serializable {
   private String value;
   private String displayValue;
 
-  public Item() {
+  public ValueItem() {
   }
 
-  public Item(String value, String displayValue) {
+  public ValueItem(String value, String displayValue) {
     this.value = value;
     this.displayValue = displayValue;
   }
@@ -38,7 +38,7 @@ public class Item implements Comparable<Item>, Serializable {
 
 
   @Override
-  public int compareTo(Item o) {
+  public int compareTo(ValueItem o) {
     return value.compareTo(o.getValue());
   }
 
@@ -46,7 +46,7 @@ public class Item implements Comparable<Item>, Serializable {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    Item item = (Item) o;
+    ValueItem item = (ValueItem) o;
     return Objects.equals(value, item.value) && Objects.equals(displayValue, item.displayValue);
   }
 

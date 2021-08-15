@@ -6,7 +6,7 @@ import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.jenkins.plugins.restlistparam.Messages;
-import io.jenkins.plugins.restlistparam.model.Item;
+import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -44,10 +44,10 @@ public class ValueResolver {
    * @param displayExpression The xPath expression
    * @return A {@link ResultContainer} capsuling either a list of strings or a user friendly error message
    */
-  public static ResultContainer<List<Item>> resolveXPath(final String xmlStr,
-                                                         final String expression,
-                                                         final String displayExpression) {
-    ResultContainer<List<Item>> container = new ResultContainer<>(Collections.emptyList());
+  public static ResultContainer<List<ValueItem>> resolveXPath(final String xmlStr,
+                                                              final String expression,
+                                                              final String displayExpression) {
+    ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -89,13 +89,13 @@ public class ValueResolver {
    * @param displayExpression expression to get text to be displayed
    * @return A list of strings converted from the {@code nodeList} (can be empty if {@code nodeList} is empty)
    */
-  private static List<Item> xmlNodeListToList(NodeList nodeList, String displayExpression) throws XPathExpressionException {
-    List<Item> res = new ArrayList<>(nodeList.getLength());
+  private static List<ValueItem> xmlNodeListToList(NodeList nodeList, String displayExpression) throws XPathExpressionException {
+    List<ValueItem> res = new ArrayList<>(nodeList.getLength());
 
     XPath xPath = XPathFactory.newInstance().newXPath();
     for (int i = 0; i < nodeList.getLength(); ++i) {
       Node displayNode = (Node) xPath.evaluate(displayExpression, nodeList.item(i), XPathConstants.NODE);
-      res.add(new Item(nodeList.item(i).getTextContent(), displayNode.getTextContent()));
+      res.add(new ValueItem(nodeList.item(i).getTextContent(), displayNode.getTextContent()));
     }
 
     return res;
@@ -109,10 +109,10 @@ public class ValueResolver {
    * @param displayExpression The Json-Path expression
    * @return A {@link ResultContainer} capsuling either a list of strings or a user friendly error message
    */
-  public static ResultContainer<List<Item>> resolveJsonPath(final String jsonStr,
-                                                            final String expression,
-                                                            final String displayExpression) {
-    ResultContainer<List<Item>> container = new ResultContainer<>(Collections.emptyList());
+  public static ResultContainer<List<ValueItem>> resolveJsonPath(final String jsonStr,
+                                                                 final String expression,
+                                                                 final String displayExpression) {
+    ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
       final List<Object> resolved = JsonPath.parse(jsonStr).read(expression);
@@ -122,7 +122,7 @@ public class ValueResolver {
           .map(JsonPath::parse)
           .map(context -> context.read("$"))
           .map(read -> (read instanceof Map) ? JsonPath.parse(read).jsonString() : (String)read)
-          .map(value -> new Item(value, parseDisplayValue(displayExpression, JsonPath.parse(value))))
+          .map(value -> new ValueItem(value, parseDisplayValue(displayExpression, JsonPath.parse(value))))
           .collect(Collectors.toList()));
 
       } else {
