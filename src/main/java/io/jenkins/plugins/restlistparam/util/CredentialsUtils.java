@@ -71,20 +71,22 @@ public class CredentialsUtils {
     if (credentialsId.startsWith("${") && credentialsId.endsWith("}")) {
       return FormValidation.warning(Messages.RLP_CredentialsUtils_ValidationWrn_ExpressionBased());
     }
-    if (!findCredentials(credentialsId).isPresent()) {
+    if (!findCredentials(context, credentialsId).isPresent()) {
       return FormValidation.error(Messages.RLP_CredentialsUtils_ValidationErr_CannotFind());
     }
     return FormValidation.ok();
   }
 
-  public static Optional<StandardCredentials> findCredentials(final String credentialsId) {
+  public static Optional<StandardCredentials> findCredentials(final Item context,
+                                                              final String credentialsId)
+  {
     if (StringUtils.isBlank(credentialsId)) {
       return Optional.empty();
     }
     List<StandardCredentials> lookupCredentials = CredentialsProvider.lookupCredentials(
       StandardCredentials.class,
-      (Item) null,
-      ACL.SYSTEM,
+      context,
+      context instanceof Queue.Task ? Tasks.getAuthenticationOf((Queue.Task)context) : ACL.SYSTEM,
       Collections.emptyList());
     CredentialsMatcher allOf = CredentialsMatchers.allOf(
       CredentialsMatchers.withId(credentialsId),
