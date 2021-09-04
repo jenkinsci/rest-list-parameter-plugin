@@ -200,7 +200,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     RestListOptionParameterValue selectedOption = req.bindJSON(RestListOptionParameterValue.class, jo);
 
     RestListParameterValue value = new RestListParameterValue(selectedOption.getName(),
-      values.get(selectedOption.getIndex()).getValue(),
+      selectedOption.getIndex(),
       selectedOption.getDescription());
 
     checkValue(value);

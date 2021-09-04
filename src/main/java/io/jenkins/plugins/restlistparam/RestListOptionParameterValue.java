@@ -10,28 +10,24 @@ import org.kohsuke.stapler.export.Exported;
 public class RestListOptionParameterValue extends ParameterValue {
   @Exported(visibility = 4)
   @Restricted(NoExternalUse.class)
-  public int index;
+  public String index;
 
-  public RestListOptionParameterValue(String name, String description, int index) {
+  public RestListOptionParameterValue(String name, String description, String index) {
     super(name, description);
     this.index = index;
   }
 
-  public RestListOptionParameterValue(String name, int index) {
-    this(name, null, index);
-  }
-
   @DataBoundConstructor
   public RestListOptionParameterValue(String name, String value) {
-    this(name, null, Integer.parseInt(value));
+    this(name, null, value);
   }
 
-  public int getIndex() {
+  public String getIndex() {
     return index;
   }
 
   @DataBoundSetter
-  public void setIndex(int index) {
+  public void setIndex(String index) {
     this.index = index;
   }
 }
