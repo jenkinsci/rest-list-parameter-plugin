@@ -154,7 +154,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   }
 
   public List<ValueItem> getValues() {
-    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(null, credentialId);
 
     ResultContainer<List<ValueItem>> container = RestValueService.get(
       getRestEndpoint(),
@@ -292,7 +292,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
       if (StringUtils.isNotBlank(value)) {
         if (value.matches("^http(s)?://.+")) {
-          Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+          Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
           return RestValueService.doBasicValidation(value, credentials.orElse(null));
         }
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointUrl());
@@ -372,7 +372,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         context.checkPermission(Item.CONFIGURE);
       }
 
-      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(credentialId);
+      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
       if (StringUtils.isBlank(restEndpoint)) {
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
       }

@@ -5,17 +5,17 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.21</version>
+    <version>4.24</version>
     <relativePath />
   </parent>
 
   <properties>
-    <revision>1.4.2</revision>
+    <revision>1.4.3</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
     <jenkins.version>2.263.4</jenkins.version>
     <bom.artifactId>2.263.x</bom.artifactId>
-    <bom.version>887.vae9c8ac09ff7</bom.version>
+    <bom.version>937.v51fde92016ed</bom.version>
     <java.level>8</java.level>
     <!--
     Other properties you may want to use:
