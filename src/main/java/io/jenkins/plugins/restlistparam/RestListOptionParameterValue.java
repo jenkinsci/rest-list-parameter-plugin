@@ -30,4 +30,23 @@ public class RestListOptionParameterValue extends ParameterValue {
   public void setIndex(String index) {
     this.index = index;
   }
+
+  @Override
+  public boolean equals(Object obj)
+  {
+    if (!super.equals(obj)) {
+      return false;
+    }
+    RestListOptionParameterValue other = (RestListOptionParameterValue) obj;
+    return index.equals(other.getIndex());
+  }
+
+  @Override
+  public int hashCode()
+  {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((index == null) ? 0 : index.hashCode());
+    return result;
+  }
 }

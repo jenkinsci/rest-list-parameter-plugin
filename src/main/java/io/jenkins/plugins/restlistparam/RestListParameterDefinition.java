@@ -75,7 +75,12 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
     this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
-    this.displayExpression = StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
+    if (StringUtils.isNotBlank(displayExpression)) {
+      this.displayExpression = displayExpression;
+    }
+    else {
+      this.displayExpression = mimeType == MimeType.APPLICATION_JSON ? "$" : "/";
+    }
     this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
     this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
@@ -105,7 +110,10 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   }
 
   public String getDisplayExpression() {
-    return displayExpression;
+    if (StringUtils.isNotBlank(displayExpression)) {
+      return displayExpression;
+    }
+    return mimeType == MimeType.APPLICATION_JSON ? "$" : "/";
   }
 
   @DataBoundSetter
@@ -177,7 +185,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       RestListParameterValue value = (RestListParameterValue) defaultValue;
       return new RestListParameterDefinition(
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
-        getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(), value.getValue());
+        getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(), value.getDisplayValue());
     }
     else {
       return this;
@@ -186,7 +194,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   @Override
   public ParameterValue createValue(final String value) {
-    RestListParameterValue parameterValue = new RestListParameterValue(getName(), values.get(Integer.parseInt(value)).getValue(), getDescription());
+    ValueItem vi =  values.get(Integer.parseInt(value));
+    RestListParameterValue parameterValue = new RestListParameterValue(getName(), vi.getValue(), vi.getDisplayValue(), getDescription());
 
     checkValue(parameterValue);
     return parameterValue;
@@ -198,10 +207,9 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                     final JSONObject jo)
   {
     RestListOptionParameterValue selectedOption = req.bindJSON(RestListOptionParameterValue.class, jo);
+    ValueItem vi =  values.get(Integer.parseInt(selectedOption.index));
 
-    RestListParameterValue value = new RestListParameterValue(selectedOption.getName(),
-      selectedOption.getIndex(),
-      selectedOption.getDescription());
+    RestListParameterValue value = new RestListParameterValue(getName(), vi.getValue(), vi.getDisplayValue(), getDescription());
 
     checkValue(value);
     return value;
@@ -222,7 +230,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     return values.stream()
       .map(ValueItem::getValue)
       .filter(Objects::nonNull)
-      .anyMatch((val) -> value.getValue().equals(val));
+      .anyMatch(val -> value.getValue().equals(val));
   }
 
   @Override

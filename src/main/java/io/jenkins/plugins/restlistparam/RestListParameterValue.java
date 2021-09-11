@@ -18,21 +18,27 @@ import java.util.Locale;
 public final class RestListParameterValue extends ParameterValue {
   @Exported(visibility = 4)
   @Restricted(NoExternalUse.class)
-  public String value;
+  private final String value;
+
+  @Exported(visibility = 4)
+  @Restricted(NoExternalUse.class)
+  private final String displayValue;
 
   @DataBoundConstructor
-  public RestListParameterValue(String name,
-                                String value)
+  public RestListParameterValue(final String name,
+                                final String value)
   {
-    this(name, value, null);
+    this(name, value, value, null);
   }
 
-  public RestListParameterValue(String name,
-                                String value,
-                                String description)
+  public RestListParameterValue(final String name,
+                                final String value,
+                                final String displayValue,
+                                final String description)
   {
     super(name, description);
     this.value = value;
+    this.displayValue = displayValue;
   }
 
   /**
@@ -54,6 +60,10 @@ public final class RestListParameterValue extends ParameterValue {
   @Override
   public String getValue() {
     return value;
+  }
+
+  public String getDisplayValue() {
+    return displayValue;
   }
 
   @Override
