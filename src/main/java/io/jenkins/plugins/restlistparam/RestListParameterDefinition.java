@@ -3,6 +3,7 @@ package io.jenkins.plugins.restlistparam;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.Extension;
 import hudson.model.Item;
+import io.jenkins.plugins.restlistparam.logic.ValueResolver;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
@@ -22,7 +23,6 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.*;
 import org.kohsuke.stapler.verb.POST;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
@@ -75,11 +75,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
     this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
-    if (StringUtils.isNotBlank(displayExpression)) {
-      this.displayExpression = displayExpression;
-    }
-    else {
-      this.displayExpression = mimeType == MimeType.APPLICATION_JSON ? "$" : "/";
+    if (mimeType == MimeType.APPLICATION_JSON) {
+      this.displayExpression = StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
     }
     this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
@@ -110,10 +107,10 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   }
 
   public String getDisplayExpression() {
-    if (StringUtils.isNotBlank(displayExpression)) {
-      return displayExpression;
+    if (mimeType == MimeType.APPLICATION_JSON) {
+      return StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
     }
-    return mimeType == MimeType.APPLICATION_JSON ? "$" : "/";
+    return "";
   }
 
   @DataBoundSetter
@@ -185,7 +182,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       RestListParameterValue value = (RestListParameterValue) defaultValue;
       return new RestListParameterDefinition(
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
-        getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(), value.getDisplayValue());
+        getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(),
+        ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), displayExpression));
     }
     else {
       return this;
@@ -194,22 +192,17 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   @Override
   public ParameterValue createValue(final String value) {
-    ValueItem vi =  values.get(Integer.parseInt(value));
-    RestListParameterValue parameterValue = new RestListParameterValue(getName(), vi.getValue(), vi.getDisplayValue(), getDescription());
+    RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
 
     checkValue(parameterValue);
     return parameterValue;
   }
 
   @Override
-  @CheckForNull
   public ParameterValue createValue(final StaplerRequest req,
                                     final JSONObject jo)
   {
-    RestListOptionParameterValue selectedOption = req.bindJSON(RestListOptionParameterValue.class, jo);
-    ValueItem vi =  values.get(Integer.parseInt(selectedOption.index));
-
-    RestListParameterValue value = new RestListParameterValue(getName(), vi.getValue(), vi.getDisplayValue(), getDescription());
+    RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
 
     checkValue(value);
     return value;

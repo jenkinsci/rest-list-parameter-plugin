@@ -20,25 +20,19 @@ public final class RestListParameterValue extends ParameterValue {
   @Restricted(NoExternalUse.class)
   private final String value;
 
-  @Exported(visibility = 4)
-  @Restricted(NoExternalUse.class)
-  private final String displayValue;
-
   @DataBoundConstructor
   public RestListParameterValue(final String name,
                                 final String value)
   {
-    this(name, value, value, null);
+    this(name, value, null);
   }
 
   public RestListParameterValue(final String name,
                                 final String value,
-                                final String displayValue,
                                 final String description)
   {
     super(name, description);
     this.value = value;
-    this.displayValue = displayValue;
   }
 
   /**
@@ -60,10 +54,6 @@ public final class RestListParameterValue extends ParameterValue {
   @Override
   public String getValue() {
     return value;
-  }
-
-  public String getDisplayValue() {
-    return displayValue;
   }
 
   @Override
@@ -97,7 +87,11 @@ public final class RestListParameterValue extends ParameterValue {
 
   @Override
   public String toString() {
-    return "(RestListParameterValue) " + getName() + "='" + value + "'";
+    return "{" +
+      "\"type\": \"RestListParameterValue\", "+
+      "\"name:\": \"" + getName() + "\", " +
+      "\"value\": \"" + value + "\"" +
+      "}";
   }
 
   @Override
