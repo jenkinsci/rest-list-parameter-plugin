@@ -5,7 +5,9 @@ import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 import io.jenkins.plugins.restlistparam.Messages;
+import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
+import io.jenkins.plugins.restlistparam.model.ValueItem;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -22,7 +24,9 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ValueResolver {
   private static final Logger log = Logger.getLogger(ValueResolver.class.getName());
@@ -34,14 +38,20 @@ public class ValueResolver {
   /**
    * Parses a {@code xmlStr}, applies a xPath {@code expression} and returns a list of strings based on the result
    *
-   * @param xmlStr     The XML text as string
-   * @param expression The xPath expression
-   * @return A {@link ResultContainer} capsuling either a list of strings or a user friendly error message
+   * @param xmlStr            The XML text as string
+   * @param expression        The xPath expression
+   * @param displayExpression The xPath expression
+   * @return A {@link ResultContainer} capsuling either a list of strings or a user-friendly error message
    */
-  public static ResultContainer<List<String>> resolveXPath(final String xmlStr,
-                                                           final String expression)
+  public static ResultContainer<List<ValueItem>> resolveXPath(final String xmlStr,
+                                                              final String expression,
+                                                              final String displayExpression)
   {
-    ResultContainer<List<String>> container = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
+
+    if (!displayExpression.equals("")) {
+      log.warning(Messages.RLP_ValueResolver_warn_xPath_DisplayExpression());
+    }
 
     try {
       DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -86,11 +96,11 @@ public class ValueResolver {
    * @param nodeList The {@link NodeList} to convert
    * @return A list of strings converted from the {@code nodeList} (can be empty if {@code nodeList} is empty)
    */
-  private static List<String> xmlNodeListToList(NodeList nodeList) {
-    List<String> res = new ArrayList<>(nodeList.getLength());
+  private static List<ValueItem> xmlNodeListToList(NodeList nodeList) {
+    List<ValueItem> res = new ArrayList<>(nodeList.getLength());
 
     for (int i = 0; i < nodeList.getLength(); ++i) {
-      res.add(nodeList.item(i).getTextContent());
+      res.add(new ValueItem(nodeList.item(i).getTextContent(), nodeList.item(i).getTextContent()));
     }
 
     return res;
@@ -99,20 +109,29 @@ public class ValueResolver {
   /**
    * Parses a {@code jsonStr}, applies a Json-Path {@code expression} and returns a list of strings based on the result
    *
-   * @param jsonStr    The Json text as string
-   * @param expression The Json-Path expression
-   * @return A {@link ResultContainer} capsuling either a list of strings or a user friendly error message
+   * @param jsonStr           The Json text as string
+   * @param expression        The Json-Path expression
+   * @param displayExpression The Json-Path expression
+   * @return A {@link ResultContainer} capsuling either a list of strings or a user-friendly error message
    */
-  public static ResultContainer<List<String>> resolveJsonPath(final String jsonStr,
-                                                              final String expression)
+  public static ResultContainer<List<ValueItem>> resolveJsonPath(final String jsonStr,
+                                                                 final String expression,
+                                                                 final String displayExpression)
   {
-    ResultContainer<List<String>> container = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
-      final List<String> resolved = JsonPath.parse(jsonStr).read(expression);
+      final List<Object> resolved = JsonPath.parse(jsonStr).read(expression);
 
       if (!resolved.isEmpty()) {
-        container.setValue(new ArrayList<>(resolved));
+        container.setValue(
+          resolved.stream()
+                  .map(JsonPath::parse)
+                  .map(context -> context.read("$"))
+                  .map(read -> (read instanceof Map) ? JsonPath.parse(read).jsonString() : (String) read)
+                  .map(value -> new ValueItem(value, parseDisplayValue(value, displayExpression)))
+                  .collect(Collectors.toList())
+        );
       }
       else {
         log.warning(Messages.RLP_ValueResolver_warn_jPath_NoValues());
@@ -137,6 +156,28 @@ public class ValueResolver {
     }
 
     return container;
+  }
+
+  /**
+   * Apply the display expression filter on a given value (only JSON supported).
+   *
+   * @param mime              The {@link MimeType} of the value to pars for the display value.
+   * @param valueStr          The value the display value should be parsed from.
+   * @param displayExpression The display expression to filter for the display value in {@code valueStr}.
+   * @return Returns the display value.
+   */
+  public static String parseDisplayValue(MimeType mime, String valueStr, String displayExpression) {
+    if (mime == MimeType.APPLICATION_JSON) {
+      return parseDisplayValue(valueStr, displayExpression);
+    }
+    if (!displayExpression.isEmpty()) {
+      log.warning(Messages.RLP_ValueResolver_warn_xPath_DisplayExpression());
+    }
+    return valueStr;
+  }
+
+  private static String parseDisplayValue(String jsonStr, String displayExpression) {
+    return JsonPath.parse(jsonStr).read(displayExpression);
   }
 
   /**

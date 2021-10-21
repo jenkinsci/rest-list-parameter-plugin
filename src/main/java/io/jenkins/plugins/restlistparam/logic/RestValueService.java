@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.restlistparam.Messages;
+import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
@@ -39,29 +40,31 @@ public class RestValueService {
    * This method uses its parameters to query a REST/Web endpoint to receive a {@link MimeType} response, which then
    * gets parsed with a supported Path expression to extract a list of string values.
    *
-   * @param restEndpoint A http/https web address to the REST/Web endpoint
-   * @param credentials  The credentials required to access said endpoint
-   * @param mimeType     The MIME type of the expected REST/Web response
-   * @param cacheTime    Time for how long the REST response gets cached for in minutes
-   * @param expression   The Json-Path or xPath expression to filter the values
-   * @param filter       additional regex filter on any parsed values
-   * @param order        Set a {@link ValueOrder} to optionally reorder the values
+   * @param restEndpoint      A http/https web address to the REST/Web endpoint
+   * @param credentials       The credentials required to access said endpoint
+   * @param mimeType          The MIME type of the expected REST/Web response
+   * @param cacheTime         Time for how long the REST response gets cached for in minutes
+   * @param valueExpression   The Json-Path or xPath expression to filter the values
+   * @param displayExpression The Json-Path or xPath expression to filter the display values
+   * @param filter            additional regex filter on any parsed values
+   * @param order             Set a {@link ValueOrder} to optionally reorder the values
    * @return A {@link ResultContainer} that capsules either the desired values or a user friendly error message.
    */
-  public static ResultContainer<List<String>> get(final String restEndpoint,
-                                                  final StandardCredentials credentials,
-                                                  final MimeType mimeType,
-                                                  final Integer cacheTime,
-                                                  final String expression,
-                                                  final String filter,
-                                                  final ValueOrder order)
+  public static ResultContainer<List<ValueItem>> get(final String restEndpoint,
+                                                     final StandardCredentials credentials,
+                                                     final MimeType mimeType,
+                                                     final Integer cacheTime,
+                                                     final String valueExpression,
+                                                     final String displayExpression,
+                                                     final String filter,
+                                                     final ValueOrder order)
   {
-    ResultContainer<List<String>> valueList = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<ValueItem>> valueList = new ResultContainer<>(Collections.emptyList());
     ResultContainer<String> rawValues = getValueStringFromRestEndpoint(restEndpoint, credentials, mimeType, cacheTime);
     Optional<String> rawValueError = rawValues.getErrorMsg();
 
     if (!rawValueError.isPresent()) {
-      valueList = convertToValuesList(mimeType, rawValues.getValue(), expression);
+      valueList = convertToValuesList(mimeType, rawValues.getValue(), valueExpression, displayExpression);
     }
     else {
       valueList.setErrorMsg(rawValueError.get());
@@ -224,21 +227,23 @@ public class RestValueService {
    *
    * @param mimeType    The {@link MimeType} of the {@code valueString}
    * @param valueString The value string to be parsed
-   * @param expression  The Json-Path or xPath expression to apply on the {@code valueString}
+   * @param valueExpression  The Json-Path or xPath expression to apply on the {@code valueString}
+   * @param displayExpression Derives the value to be displayed to the user parsed by value expression
    * @return A {@link ResultContainer} capsuling the results of the applied expression or an error message
    */
-  private static ResultContainer<List<String>> convertToValuesList(final MimeType mimeType,
-                                                                   final String valueString,
-                                                                   final String expression)
+  private static ResultContainer<List<ValueItem>> convertToValuesList(final MimeType mimeType,
+                                                                      final String valueString,
+                                                                      final String valueExpression,
+                                                                      final String displayExpression)
   {
-    ResultContainer<List<String>> container;
+    ResultContainer<List<ValueItem>> container;
 
     switch (mimeType) {
       case APPLICATION_JSON:
-        container = ValueResolver.resolveJsonPath(valueString, expression);
+        container = ValueResolver.resolveJsonPath(valueString, valueExpression, displayExpression);
         break;
       case APPLICATION_XML:
-        container = ValueResolver.resolveXPath(valueString, expression);
+        container = ValueResolver.resolveXPath(valueString, valueExpression, displayExpression);
         break;
       default:
         throw new IllegalStateException("Unexpected value: " + mimeType);
@@ -255,18 +260,18 @@ public class RestValueService {
    * @param order  The Order to apply (if any)
    * @return A {@link ResultContainer} capsuling a filtered string list or a user friendly error message
    */
-  private static ResultContainer<List<String>> filterAndSortValues(final List<String> values,
-                                                                   final String filter,
-                                                                   final ValueOrder order)
+  private static ResultContainer<List<ValueItem>> filterAndSortValues(final List<ValueItem> values,
+                                                                      final String filter,
+                                                                      final ValueOrder order)
   {
-    ResultContainer<List<String>> container = new ResultContainer<>(Collections.emptyList());
+    ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
 
     try {
-      List<String> updatedValues;
+      List<ValueItem> updatedValues;
 
       if (isFilterSet(filter) && !isOrderSet(order)) {
         updatedValues = values.stream()
-                              .filter(value -> value.matches(filter))
+                              .filter(value -> value.getValue().matches(filter))
                               .collect(Collectors.toList());
       }
       else if (!isFilterSet(filter) && isOrderSet(order)) {
@@ -276,7 +281,7 @@ public class RestValueService {
       }
       else {
         updatedValues = values.stream()
-                              .filter(value -> value.matches(filter))
+                              .filter(value -> value.getValue().matches(filter))
                               .sorted(order == ValueOrder.ASC ? Comparator.naturalOrder() : Comparator.reverseOrder())
                               .collect(Collectors.toList());
       }

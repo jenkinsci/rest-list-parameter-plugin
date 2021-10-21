@@ -1,7 +1,7 @@
 package io.jenkins.plugins.restlistparam;
 
 public class TestConst {
-  public final static String validTestJson = "[\n" +
+  public static final String validTestJson = "[\n" +
     "  {\n" +
     "    \"name\": \"v10.6.4\",\n" +
     "    \"zipball_url\": \"https://api.github.com/repos/jellyfin/jellyfin/zipball/v10.6.4\",\n" +
@@ -34,7 +34,18 @@ public class TestConst {
     "  }\n" +
     "]\n";
 
-  public final static String invalidTestJson = "[\n" +
+  public static final String validJsonValueItem = "{" +
+    "\"name\":\"v10.6.4\"," +
+    "\"zipball_url\":\"https://api.github.com/repos/jellyfin/jellyfin/zipball/v10.6.4\"," +
+    "\"tarball_url\":\"https://api.github.com/repos/jellyfin/jellyfin/tarball/v10.6.4\"," +
+    "\"commit\":{" +
+    "\"sha\":\"b49cd1d3017f23fc75703829ac2ea1d45d8a4881\"," +
+    "\"url\":\"https://api.github.com/repos/jellyfin/jellyfin/commits/b49cd1d3017f23fc75703829ac2ea1d45d8a4881\"" +
+    "}," +
+    "\"node_id\":\"MDM6UmVmMTYxMDEyMDE5OnJlZnMvdGFncy92MTAuNi40\"" +
+    "}";
+
+  public static final String invalidTestJson = "[\n" +
     "  {\n" +
     "    \"name\": \"v10.6.4\",\n" +
     "    \"zipball_url\": \"https://api.github.com/repos/jellyfin/jellyfin/zipball/v10.6.4\",\n" +
@@ -66,7 +77,7 @@ public class TestConst {
     "    \"node_id\": \"MDM6UmVmMTYxMDEyMDE5OnJlZnMvdGFncy92MTAuNi4y\"\n" +
     "  }\n";
 
-  public final static String validTestXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+  public static final String validTestXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
     "<root>\n" +
     "  <row>\n" +
     "    <name>v10.6.4</name>\n" +
@@ -100,7 +111,7 @@ public class TestConst {
     "  </row>\n" +
     "</root>";
 
-  public final static String invalidTestXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+  public static final String invalidTestXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
     "<root>\n" +
     "  <row>\n" +
     "    <name>v10.6.4</name>\n" +

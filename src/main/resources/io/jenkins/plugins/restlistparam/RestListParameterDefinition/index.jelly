@@ -18,9 +18,9 @@
       <input type="hidden" name="description" value="${it.description}"/>
 
       <select id="${id}-select" class="setting-input" name="value">
-        <j:forEach var="value" items="${it.values}" varStatus="loop">
-          <f:option value="${value}" selected="${value.equals(it.defaultValue)}">
-            ${value}
+        <j:forEach var="item" items="${it.values}" varStatus="loop">
+          <f:option value="${item.value}" selected="${item.displayValue.equals(it.defaultValue)}">
+            ${item.displayValue}
           </f:option>
         </j:forEach>
       </select>

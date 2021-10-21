@@ -25,6 +25,10 @@
   <!-- Some advances options -->
   <f:advanced>
     <f:section title="${%parameter.advanced}" >
+      <f:entry title="${%parameter.displayExpression}" field="displayExpression">
+        <f:textbox default="" checkMethod="post" />
+      </f:entry>
+
       <f:entry title="${%parameter.cacheTime}" field="cacheTime">
         <f:number default="${descriptor.getDefaultCacheTime()}" checkMethod="post"/>
       </f:entry>
@@ -45,7 +49,7 @@
 
   <f:validateButton
       title="${%parameter.testConfig}" progress="${%parameter.testing}"
-      method="testConfiguration" with="restEndpoint,credentialId,mimeType,valueExpression,filter,valueOrder" />
+      method="testConfiguration" with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder" />
 
   <f:entry title="${%parameter.description}" field="description">
     <f:textarea />

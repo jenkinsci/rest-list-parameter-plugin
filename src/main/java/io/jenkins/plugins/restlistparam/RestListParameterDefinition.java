@@ -3,6 +3,8 @@ package io.jenkins.plugins.restlistparam;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.Extension;
 import hudson.model.Item;
+import io.jenkins.plugins.restlistparam.logic.ValueResolver;
+import io.jenkins.plugins.restlistparam.model.ValueItem;
 import hudson.model.ParameterDefinition;
 import hudson.model.ParameterValue;
 import hudson.model.SimpleParameterDefinition;
@@ -21,7 +23,6 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.*;
 import org.kohsuke.stapler.verb.POST;
 
-import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
@@ -36,12 +37,13 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   private final String credentialId;
   private final MimeType mimeType;
   private final String valueExpression;
+  private String displayExpression;
   private ValueOrder valueOrder;
   private String defaultValue;
   private String filter;
   private Integer cacheTime;
   private String errorMsg;
-  private List<String> values;
+  private List<ValueItem> values;
 
   @DataBoundConstructor
   public RestListParameterDefinition(final String name,
@@ -49,10 +51,11 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                      final String restEndpoint,
                                      final String credentialId,
                                      final MimeType mimeType,
-                                     final String valueExpression)
+                                     final String valueExpression,
+                                     final String displayExpression)
   {
     this(name, description, restEndpoint, credentialId, mimeType, valueExpression,
-         ValueOrder.NONE, ".*", config.getCacheTime(), "");
+      displayExpression, ValueOrder.NONE, ".*", config.getCacheTime(), "");
   }
 
   public RestListParameterDefinition(final String name,
@@ -61,6 +64,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                      final String credentialId,
                                      final MimeType mimeType,
                                      final String valueExpression,
+                                     final String displayExpression,
                                      final ValueOrder valueOrder,
                                      final String filter,
                                      final Integer cacheTime,
@@ -71,6 +75,9 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
     this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
+    if (mimeType == MimeType.APPLICATION_JSON) {
+      this.displayExpression = StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
+    }
     this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
     this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
@@ -97,6 +104,18 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   public String getFilter() {
     return filter;
+  }
+
+  public String getDisplayExpression() {
+    if (mimeType == MimeType.APPLICATION_JSON) {
+      return StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
+    }
+    return "";
+  }
+
+  @DataBoundSetter
+  public void setDisplayExpression(final String displayExpression) {
+    this.displayExpression = displayExpression;
   }
 
   @DataBoundSetter
@@ -139,15 +158,16 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     return errorMsg;
   }
 
-  public List<String> getValues() {
+  public List<ValueItem> getValues() {
     Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(null, credentialId);
 
-    ResultContainer<List<String>> container = RestValueService.get(
+    ResultContainer<List<ValueItem>> container = RestValueService.get(
       getRestEndpoint(),
       credentials.orElse(null),
       getMimeType(),
       getCacheTime(),
       getValueExpression(),
+      getDisplayExpression(),
       getFilter(),
       getValueOrder());
 
@@ -162,7 +182,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       RestListParameterValue value = (RestListParameterValue) defaultValue;
       return new RestListParameterDefinition(
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
-        getValueExpression(), getValueOrder(), getFilter(), getCacheTime(), value.getValue());
+        getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(),
+        ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), displayExpression));
     }
     else {
       return this;
@@ -172,16 +193,17 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   @Override
   public ParameterValue createValue(final String value) {
     RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
+
     checkValue(parameterValue);
     return parameterValue;
   }
 
   @Override
-  @CheckForNull
   public ParameterValue createValue(final StaplerRequest req,
                                     final JSONObject jo)
   {
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
+
     checkValue(value);
     return value;
   }
@@ -194,7 +216,14 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   @Override
   public boolean isValid(ParameterValue value) {
-    return values.contains(((RestListParameterValue) value).getValue());
+    if(value == null || value.getValue() == null) {
+      return false;
+    }
+
+    return values.stream()
+      .map(ValueItem::getValue)
+      .filter(Objects::nonNull)
+      .anyMatch(val -> value.getValue().equals(val));
   }
 
   @Override
@@ -333,6 +362,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                               @QueryParameter final String credentialId,
                                               @QueryParameter final MimeType mimeType,
                                               @QueryParameter final String valueExpression,
+                                              @QueryParameter final String displayExpression,
                                               @QueryParameter final String filter,
                                               @QueryParameter final ValueOrder valueOrder)
     {
@@ -357,24 +387,25 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
       }
 
-      ResultContainer<List<String>> container = RestValueService.get(
+      ResultContainer<List<ValueItem>> container = RestValueService.get(
         restEndpoint,
         credentials.orElse(null),
         mimeType,
         0,
         valueExpression,
+        displayExpression,
         filter,
         valueOrder);
 
       Optional<String> errorMsg = container.getErrorMsg();
-      List<String> values = container.getValue();
+      List<ValueItem> values = container.getValue();
       if (errorMsg.isPresent()) {
         return FormValidation.error(errorMsg.get());
       }
 
       // values should NEVER be empty here
       // due to all the filtering and error handling done in the RestValueService
-      return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), values.get(0)));
+      return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), values.get(0).getDisplayValue()));
     }
   }
 }
