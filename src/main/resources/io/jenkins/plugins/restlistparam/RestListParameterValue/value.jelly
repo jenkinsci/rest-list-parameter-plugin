@@ -4,6 +4,6 @@
     xmlns:i="jelly:fmt" xmlns:p="/lib/hudson/project">
   <j:set var="escapeEntryTitleAndDescription" value="false" />
   <f:entry title="${h.escape(it.name)}" description="${it.formattedDescription}">
-    <f:textbox name="value" value="${it.getValue()}" readonly="true" tooltip="Displays as: ${h.escape(it.getDisplayValue())}" />
+    <f:textbox name="value" value="${it.getValue()}" readonly="true" />
   </f:entry>
 </j:jelly>
