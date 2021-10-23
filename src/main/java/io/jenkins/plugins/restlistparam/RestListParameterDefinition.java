@@ -86,6 +86,35 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.values = Collections.emptyList();
   }
 
+  private RestListParameterDefinition(final String name,
+                                      final String description,
+                                      final String restEndpoint,
+                                      final String credentialId,
+                                      final MimeType mimeType,
+                                      final String valueExpression,
+                                      final String displayExpression,
+                                      final ValueOrder valueOrder,
+                                      final String filter,
+                                      final Integer cacheTime,
+                                      final String defaultValue,
+                                      final List<ValueItem> values)
+  {
+    super(name, description);
+    this.restEndpoint = restEndpoint;
+    this.mimeType = mimeType;
+    this.valueExpression = valueExpression;
+    this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
+    if (mimeType == MimeType.APPLICATION_JSON) {
+      this.displayExpression = StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
+    }
+    this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
+    this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
+    this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
+    this.cacheTime = cacheTime != null ? cacheTime : config.getCacheTime();
+    this.errorMsg = "";
+    this.values = values;
+  }
+
   public String getRestEndpoint() {
     return restEndpoint;
   }
@@ -183,7 +212,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       return new RestListParameterDefinition(
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
         getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(),
-        ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), displayExpression));
+        ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), displayExpression), getValues());
     }
     else {
       return this;
