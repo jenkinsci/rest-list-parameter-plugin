@@ -59,8 +59,38 @@ If you expect the response of the specified endpoint to produce a Json response 
 
 The result of such a configuration will be the application of the Json-Path on the response Json to pars the string values later provided in the _Build with Parameter_ dropdown of this parameter.
 
+==== Display value configuration
+
+NOTE: Added in v1.5.x thanks to `rolaca11`
+
+The optional 'display value' configuration, hidden within the advanced configuration, allows the use of a REST service that returns full Json objects that get pased into the Pipeline run but to display only an identifying value within the select dropdown.
+
+.Example JSON returned by REST endpoint
+[source,json]
+----
+[
+  {
+    "name": "v10.7.7",
+    "zipball_url": "https://api.github.com/repos/jellyfin/jellyfin/zipball/v10.7.7",
+    "tarball_url": "https://api.github.com/repos/jellyfin/jellyfin/tarball/v10.7.7",
+    "commit": {
+      "sha": "53186c766bddf954483d7b40e385b382eabd0d8e",
+      "url": "https://api.github.com/repos/jellyfin/jellyfin/commits/53186c766bddf954483d7b40e385b382eabd0d8e"
+    },
+    "node_id": "MDM6UmVmMTYxMDEyMDE5OnJlZnMvdGFncy92MTAuNi40"
+  },
+  {
+    "...": "..."
+  }
+]
+----
+
+With a `Value Expression` such as `$.*` and a `Display Expression` such as `$.name` the values in the dropdown would only show up as the name property of each JSON object (i.e. `v10.7.7`).
+
 [#xPath-configuration]
 === xPath configuration
+
+IMPORTANT: If you are a user of this functionality please have a look at the pined issue #99
 
 image::.media/xPath.png[Demo config for xPath]
 
@@ -224,17 +254,11 @@ Just if the badge from `shields.io` and the link:LICENSE[] file do not make it o
 [#bundled-project-sources]
 == Bundled Project Sources
 
-NOTE: Bundled as of v1.3.0
+NOTE: Bundled as of v1.3.x, updated as of v1.4.x
 
 [cols="1,^0,^0,2"]
 |===
 |Project |Version |Licence |Description
-
-|[.line-through]#link:https://github.com/select2/select2[Select2]#
-|[.line-through]#`v4.0.13`#
-|[.line-through]#link:https://github.com/select2/select2/blob/4.0.13/LICENSE.md[MIT]#
-|[.line-through]#An amazingly simple to use jQuery replacement for select boxes (used to offer a filterable select dropdown)#
-Replaced with the link:https://github.com/jenkinsci/select2-api-plugin[Select2 Api Plugin] in 1.4.x
 
 |link:https://github.com/ttskch/select2-bootstrap4-theme[Select2-Bootstrap4-Theme]
 |`v1.5.2`
