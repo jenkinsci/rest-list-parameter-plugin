@@ -422,7 +422,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         mimeType,
         0,
         valueExpression,
-        displayExpression,
+        StringUtils.isNotBlank(displayExpression) ? displayExpression : "$",
         filter,
         valueOrder);
 
