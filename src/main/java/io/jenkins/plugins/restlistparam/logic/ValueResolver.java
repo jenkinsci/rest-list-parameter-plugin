@@ -49,7 +49,7 @@ public class ValueResolver {
   {
     ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
 
-    if (!displayExpression.equals("")) {
+    if (!displayExpression.isEmpty()) {
       log.warning(Messages.RLP_ValueResolver_warn_xPath_DisplayExpression());
     }
 
