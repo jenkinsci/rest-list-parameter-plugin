@@ -44,23 +44,57 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 [#configuration]
 == Configuration
 
-image::.media/parameter.png[Parameter configuration (Advanced collapsed)]
+image::.media/configuration.png[Parameter configuration (Advanced collapsed)]
 
-image::.media/parameter-full.png[Parameter configuration (Advanced expanded)]
+image::.media/configuration-advanced.png[Parameter configuration (Advanced expanded)]
 
-image::.media/build.png[Demo Build (+ showcasing error messaging)]
+image::.media/trigger-build.png[Demo Build with Parameters]
+
+image::.media/trigger-build_error.png[Demo Build with Parameters with error]
 
 [#jsonPath-configuration]
 === Json-Path configuration
 
-image::.media/json-path.png[Demo config for Json-Path]
+image::.media/configuration-json_path.png[Demo config for Json-Path]
 
 If you expect the response of the specified endpoint to produce a Json response and need to utilize Json-Path, then you have to set the MIME type to _APPLICATION_JSON_ (this will also send this MIME as `ACCEPT` header) and provide the desired Json-Path in the _Value Expression_ field.
 
 The result of such a configuration will be the application of the Json-Path on the response Json to pars the string values later provided in the _Build with Parameter_ dropdown of this parameter.
 
+==== Display value configuration
+
+NOTE: Added in v1.5.x thanks to `rolaca11`
+
+image::.media/configuration-display_expr.png[Demo Display Expression configuration]
+
+The optional 'display value' configuration, hidden within the advanced configuration, allows the use of a REST service that returns full Json objects that get pased into the Pipeline run but to display only an identifying value within the select dropdown.
+
+.Example JSON returned by REST endpoint
+[source,json]
+----
+[
+  {
+    "name": "v10.7.7",
+    "zipball_url": "https://api.github.com/repos/jellyfin/jellyfin/zipball/v10.7.7",
+    "tarball_url": "https://api.github.com/repos/jellyfin/jellyfin/tarball/v10.7.7",
+    "commit": {
+      "sha": "53186c766bddf954483d7b40e385b382eabd0d8e",
+      "url": "https://api.github.com/repos/jellyfin/jellyfin/commits/53186c766bddf954483d7b40e385b382eabd0d8e"
+    },
+    "node_id": "MDM6UmVmMTYxMDEyMDE5OnJlZnMvdGFncy92MTAuNi40"
+  },
+  {
+    "...": "..."
+  }
+]
+----
+
+With a `Value Expression` such as `$.*` and a `Display Expression` such as `$.name` the values in the dropdown would only show up as the name property of each JSON object (i.e. `v10.7.7`).
+
 [#xPath-configuration]
 === xPath configuration
+
+IMPORTANT: If you are a user of this functionality please have a look at the pined issue #99
 
 image::.media/xPath.png[Demo config for xPath]
 
@@ -89,9 +123,11 @@ With v1.1.x+ the validation got expanded to be more helpful and prevent the cons
 The most notable expansion in validation was the `REST Endpoint` field validation, which now works similar to the validation found for the SCM fields (Endpoint and credential).
 Additionally, a `Test Configuration` button got added, which once pressed, attempts to query the endpoint and list the number of parsed values as well as the first value in the list.
 
-image::.media/config-valid.png[Successful Configuiration Validation]
+image::.media/configuration-test_success.png[Successful Configuiration Validation]
 
-image::.media/config-invalid.png[Faild Configuiration Validation]
+image::.media/configuration-test_error1.png[Faild Configuiration Validation (due to filter)]
+
+image::.media/configuration-test_error2.png[Faild Configuiration Validation (due to json-path)]
 
 [#valueCaching]
 === Value Caching
@@ -105,7 +141,7 @@ Per default caching is disabled for new and old `REST List Parameter`, but can b
 Additionally, there are global configuration values now, that give the user control over the global cache size _(default 50 MiB)_, as well as the default value for the cache max age _(default 0 minutes)_.
 These values can be overwritten within the UI or via the link:https://github.com/jenkinsci/configuration-as-code-plugin[ConfigurationAsCode] plugin and applying a config link:#jcasc[with this] added.
 
-image::.media/global-config.png[Global Config]
+image::.media/global-configuration.png[Global Config]
 
 [#valueOrder]
 === Optional Value Ordering
@@ -116,7 +152,7 @@ This option in the "Advanced" section of the parameter configuration allows the 
 The default value of this option is `NONE`, so no additional sporting gets applied on the values received.
 The other two options offer tha ability to apply either an ascending or descending sort order to the received values.
 
-image::.media/valueOrder.png["AdvancedOption" Apply Sort Order]
+image::.media/configuration-sort_order.png["AdvancedOption" Apply Sort Order]
 
 [#pipeline-parameter]
 === Definition in Pipeline
@@ -224,17 +260,11 @@ Just if the badge from `shields.io` and the link:LICENSE[] file do not make it o
 [#bundled-project-sources]
 == Bundled Project Sources
 
-NOTE: Bundled as of v1.3.0
+NOTE: Bundled as of v1.3.x, updated as of v1.4.x
 
 [cols="1,^0,^0,2"]
 |===
 |Project |Version |Licence |Description
-
-|[.line-through]#link:https://github.com/select2/select2[Select2]#
-|[.line-through]#`v4.0.13`#
-|[.line-through]#link:https://github.com/select2/select2/blob/4.0.13/LICENSE.md[MIT]#
-|[.line-through]#An amazingly simple to use jQuery replacement for select boxes (used to offer a filterable select dropdown)#
-Replaced with the link:https://github.com/jenkinsci/select2-api-plugin[Select2 Api Plugin] in 1.4.x
 
 |link:https://github.com/ttskch/select2-bootstrap4-theme[Select2-Bootstrap4-Theme]
 |`v1.5.2`
