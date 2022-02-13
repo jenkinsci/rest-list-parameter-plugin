@@ -177,7 +177,7 @@ public class ValueResolver {
   }
 
   private static String parseDisplayValue(String jsonStr, String displayExpression) {
-    return JsonPath.parse(jsonStr).read(displayExpression);
+    return JsonPath.parse(jsonStr).read(displayExpression, String.class);
   }
 
   /**
