@@ -1,9 +1,6 @@
 package io.jenkins.plugins.restlistparam.logic;
 
-import com.jayway.jsonpath.InvalidJsonException;
-import com.jayway.jsonpath.InvalidPathException;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
+import com.jayway.jsonpath.*;
 import io.jenkins.plugins.restlistparam.Messages;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
@@ -128,7 +125,7 @@ public class ValueResolver {
           resolved.stream()
                   .map(JsonPath::parse)
                   .map(context -> context.read("$"))
-                  .map(read -> (read instanceof Map) ? JsonPath.parse(read).jsonString() : (String) read)
+                  .map(ValueResolver::convertToString)
                   .map(value -> new ValueItem(value, parseDisplayValue(value, displayExpression)))
                   .collect(Collectors.toList())
         );
@@ -156,6 +153,24 @@ public class ValueResolver {
     }
 
     return container;
+  }
+
+  public static String convertToString(Object obj) {
+    if (obj instanceof Map) {
+      return JsonPath.parse(obj).jsonString();
+    }
+    else if (obj instanceof Integer) {
+      return Integer.toString((Integer) obj);
+    }
+    else if (obj instanceof Float) {
+      return Float.toString((Float) obj);
+    }
+    else if (obj instanceof String) {
+      return (String) obj;
+    }
+    else {
+      throw new ClassCastException("Unable to cast '" + obj.getClass().getCanonicalName() + "' to String");
+    }
   }
 
   /**
