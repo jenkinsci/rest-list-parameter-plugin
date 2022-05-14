@@ -48,11 +48,18 @@
   </f:advanced>
 
   <f:validateButton
-      title="${%parameter.testConfig}" progress="${%parameter.testing}"
-      method="testConfiguration" with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder" />
+      title="${%parameter.testConfig}"
+      progress="${%parameter.testing}"
+      method="testConfiguration"
+      with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder"
+  />
 
   <f:entry title="${%parameter.description}" field="description">
-    <f:textarea />
+    <f:textarea
+      codemirror-mode="${app.markupFormatter.codeMirrorMode}"
+      codemirror-config="${app.markupFormatter.codeMirrorConfig}"
+      previewEndpoint="/markupFormatter/previewDescription"
+    />
   </f:entry>
 
 </j:jelly>
