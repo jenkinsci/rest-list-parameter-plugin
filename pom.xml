@@ -10,12 +10,12 @@
   </parent>
 
   <properties>
-    <revision>1.5.3</revision>
+    <revision>1.6.0</revision>
     <changelist>-SNAPSHOT</changelist>
     <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-    <jenkins.version>2.263.4</jenkins.version>
-    <bom.artifactId>2.263.x</bom.artifactId>
-    <bom.version>961.vf0c9f6f59827</bom.version>
+    <jenkins.version>2.332.1</jenkins.version>
+    <bom.artifactId>2.332.x</bom.artifactId>
+    <bom.version>1370.vfa_e23fe119c3</bom.version>
     <java.level>8</java.level>
     <!--
     Other properties you may want to use:
@@ -110,6 +110,15 @@
       <version>4.0.13-6</version>
     </dependency>
 
+    <!-- Optional Dependencies -->
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>antisamy-markup-formatter</artifactId>
+      <version>2.7</version>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- Test Dependencies -->
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-cps</artifactId>
