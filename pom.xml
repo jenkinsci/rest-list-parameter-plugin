@@ -102,7 +102,7 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>jquery3-api</artifactId>
-      <version>3.6.0-2</version>
+      <version>3.6.0-4</version>
     </dependency>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
