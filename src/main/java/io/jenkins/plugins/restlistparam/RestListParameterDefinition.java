@@ -355,12 +355,14 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
     }
 
+    @POST
     public ListBoxModel doFillCredentialIdItems(@AncestorInPath final Item context,
                                                 @QueryParameter final String credentialId)
     {
       return CredentialsUtils.doFillCredentialsIdItems(context, credentialId);
     }
 
+    @POST
     public FormValidation doCheckCredentialId(@AncestorInPath final Item context,
                                               @QueryParameter final String value)
     {

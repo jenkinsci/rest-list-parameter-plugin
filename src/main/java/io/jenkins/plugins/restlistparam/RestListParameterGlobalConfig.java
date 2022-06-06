@@ -5,6 +5,7 @@ import hudson.ExtensionList;
 import hudson.util.FormValidation;
 import jenkins.YesNoMaybe;
 import jenkins.model.GlobalConfiguration;
+import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -52,6 +53,10 @@ public final class RestListParameterGlobalConfig extends GlobalConfiguration {
 
   @POST
   public FormValidation doCheckCacheSize(@QueryParameter Long cacheSize) {
+    if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+      return FormValidation.ok();
+    }
+
     if (cacheSize != null && cacheSize > 0) {
       return FormValidation.ok();
     }
@@ -71,6 +76,10 @@ public final class RestListParameterGlobalConfig extends GlobalConfiguration {
 
   @POST
   public FormValidation doCheckCacheTime(@QueryParameter Integer cacheTime) {
+    if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+      return FormValidation.ok();
+    }
+
     if (cacheTime != null && cacheTime >= 0) {
       return FormValidation.ok();
     }
