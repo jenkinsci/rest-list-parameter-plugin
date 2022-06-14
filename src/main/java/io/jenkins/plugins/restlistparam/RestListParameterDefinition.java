@@ -70,7 +70,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                      final Integer cacheTime,
                                      final String defaultValue)
   {
-    super(name, description);
+    super(name);
+    setDescription(description);
     this.restEndpoint = restEndpoint;
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
@@ -99,7 +100,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                       final String defaultValue,
                                       final List<ValueItem> values)
   {
-    super(name, description);
+    super(name);
+    setDescription(description);
     this.restEndpoint = restEndpoint;
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
@@ -221,6 +223,10 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   @Override
   public ParameterValue createValue(final String value) {
+    if(values.isEmpty()) {
+      getValues();
+    }
+
     RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
 
     checkValue(parameterValue);
@@ -231,6 +237,10 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   public ParameterValue createValue(final StaplerRequest req,
                                     final JSONObject jo)
   {
+    if(values.isEmpty()) {
+      getValues();
+    }
+
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
 
     checkValue(value);
