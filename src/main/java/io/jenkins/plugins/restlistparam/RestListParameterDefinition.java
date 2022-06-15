@@ -223,12 +223,9 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   @Override
   public ParameterValue createValue(final String value) {
-    if(values.isEmpty()) {
-      getValues();
-    }
-
     RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
 
+    getValues();
     checkValue(parameterValue);
     return parameterValue;
   }
@@ -237,12 +234,9 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   public ParameterValue createValue(final StaplerRequest req,
                                     final JSONObject jo)
   {
-    if(values.isEmpty()) {
-      getValues();
-    }
-
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
 
+    getValues();
     checkValue(value);
     return value;
   }
