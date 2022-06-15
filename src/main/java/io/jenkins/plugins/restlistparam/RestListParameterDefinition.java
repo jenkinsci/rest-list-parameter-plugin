@@ -70,7 +70,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                      final Integer cacheTime,
                                      final String defaultValue)
   {
-    super(name, description);
+    super(name);
+    setDescription(description);
     this.restEndpoint = restEndpoint;
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
@@ -99,7 +100,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                       final String defaultValue,
                                       final List<ValueItem> values)
   {
-    super(name, description);
+    super(name);
+    setDescription(description);
     this.restEndpoint = restEndpoint;
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
@@ -223,6 +225,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   public ParameterValue createValue(final String value) {
     RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
 
+    getValues();
     checkValue(parameterValue);
     return parameterValue;
   }
@@ -233,6 +236,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   {
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
 
+    getValues();
     checkValue(value);
     return value;
   }
