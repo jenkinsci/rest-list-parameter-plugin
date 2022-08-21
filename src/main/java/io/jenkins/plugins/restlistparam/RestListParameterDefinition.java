@@ -190,7 +190,13 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   }
 
   public List<ValueItem> getValues() {
-    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(null, credentialId);
+    Item context = null;
+
+    if (Stapler.getCurrentRequest() != null) {
+      context = Stapler.getCurrentRequest().findAncestorObject(Item.class);
+    }
+
+    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
 
     ResultContainer<List<ValueItem>> container = RestValueService.get(
       getRestEndpoint(),
@@ -408,18 +414,18 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         context.checkPermission(Item.CONFIGURE);
       }
 
-      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
       if (StringUtils.isBlank(restEndpoint)) {
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
-      }
-      if (StringUtils.isNotBlank(credentialId) && !credentials.isPresent()) {
-        return FormValidation.error(Messages.RLP_CredentialsUtils_ValidationErr_CannotFind());
       }
       if (mimeType == null) {
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_UnknownMime());
       }
       if (StringUtils.isBlank(valueExpression)) {
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
+      }
+      Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
+      if (StringUtils.isNotBlank(credentialId) && !credentials.isPresent()) {
+        return FormValidation.error(Messages.RLP_CredentialsUtils_ValidationErr_CannotFind());
       }
 
       ResultContainer<List<ValueItem>> container = RestValueService.get(
