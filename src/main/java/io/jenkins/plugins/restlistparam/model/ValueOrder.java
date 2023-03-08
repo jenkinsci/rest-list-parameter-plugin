@@ -3,7 +3,8 @@ package io.jenkins.plugins.restlistparam.model;
 public enum ValueOrder {
   NONE,
   ASC,
-  DSC;
+  DSC,
+  REV;
 
   @Override
   public String toString() {
@@ -14,6 +15,8 @@ public enum ValueOrder {
         return "Ascending";
       case DSC:
         return "Descending";
+      case REV:
+        return "Reversed";
       default:
         return "Undefined";
     }
