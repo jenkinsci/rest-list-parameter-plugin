@@ -15,7 +15,7 @@
     <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
     <jenkins.version>2.332.1</jenkins.version>
     <bom.artifactId>2.332.x</bom.artifactId>
-    <bom.version>1595.v8c71c13cc3a_9</bom.version>
+    <bom.version>1763.v092b_8980a_f5e</bom.version>
     <java.level>8</java.level>
     <!--
     Other properties you may want to use:
