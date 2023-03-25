@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RestValueService {
   private static final Logger log = Logger.getLogger(RestValueService.class.getName());
@@ -269,27 +270,24 @@ public class RestValueService {
     try {
       List<ValueItem> updatedValues;
 
-      if (isFilterSet(filter) && !isOrderSet(order)) {
-        updatedValues = values.stream()
-                              .filter(value -> value.getValue().matches(filter))
-                              .collect(Collectors.toList());
-      }
-      else if (!isFilterSet(filter) && isOrderSet(order)) {
-        updatedValues = values.stream()
-                              .sorted(order == ValueOrder.ASC ? Comparator.naturalOrder() : Comparator.reverseOrder())
-                              .collect(Collectors.toList());
-      }
-      else {
-        updatedValues = values.stream()
-                              .filter(value -> value.getValue().matches(filter))
-                              .sorted(order == ValueOrder.ASC ? Comparator.naturalOrder() : Comparator.reverseOrder())
-                              .collect(Collectors.toList());
+      Stream<ValueItem> valueStream = values.stream();
+      if (isFilterSet(filter)){
+        valueStream = valueStream.filter(value -> value.getValue().matches(filter));
       }
 
-      if (!updatedValues.isEmpty()) {
-        container.setValue(updatedValues);
+      if (order == ValueOrder.ASC) {
+        valueStream = valueStream.sorted(Comparator.naturalOrder());
+      } else if (order == ValueOrder.DSC) {
+        valueStream = valueStream.sorted(Comparator.reverseOrder());
       }
-      else {
+
+      updatedValues = valueStream.collect(Collectors.toList());
+      if (!updatedValues.isEmpty()) {
+        if (order == ValueOrder.REV){
+          Collections.reverse(updatedValues);
+        }
+        container.setValue(updatedValues);
+      } else {
         container.setErrorMsg(Messages.RLP_RestValueService_info_FilterReturnedNoValues(filter));
       }
     }
