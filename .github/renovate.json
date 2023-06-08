@@ -1,0 +1,37 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    ":semanticCommits",
+    ":semanticCommitScope(deps)",
+    ":enableVulnerabilityAlertsWithLabel(security)",
+    "helpers:pinGitHubActionDigests",
+    "schedule:weekly"
+  ],
+  "dependencyDashboard": true,
+  "rebaseWhen": "conflicted",
+  "addLabels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "Add the ci and github-actions GitHub label to GitHub Action bump PRs",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["ci", "github-actions"],
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "Add the java GitHub label to Maven bump PRs",
+      "matchDatasources": ["maven"],
+      "addLabels": ["java"]
+    },
+    {
+      "description": "Group GitHub Action bumps to one PR as long as they have no major jump",
+      "matchManagers": ["github-actions"],
+      "groupName": "CI dependencies",
+      "groupSlug": "ci-dependencies",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ]
+    }
+  ]
+}

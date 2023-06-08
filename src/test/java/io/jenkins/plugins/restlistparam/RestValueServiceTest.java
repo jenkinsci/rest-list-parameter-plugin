@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-// TODO more unit tests here (preferably replace integration tests)
+// Task for later: more unit tests here (preferably replace integration tests)
 public class RestValueServiceTest {
   @Test
   public void successfulGetIntegrationTest() {

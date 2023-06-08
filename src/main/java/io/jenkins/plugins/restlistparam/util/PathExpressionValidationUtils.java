@@ -21,7 +21,7 @@ public class PathExpressionValidationUtils {
       xpath.compile(expression);
       return FormValidation.ok();
     }
-    catch (XPathExpressionException | NullPointerException ignore) {
+    catch (XPathExpressionException ignore) {
       return FormValidation.error(Messages.RLP_PathExpressionValidationUtil_FormErr_xPath());
     }
   }
