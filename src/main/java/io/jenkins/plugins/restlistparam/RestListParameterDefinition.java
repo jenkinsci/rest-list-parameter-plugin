@@ -231,7 +231,6 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   public ParameterValue createValue(final String value) {
     RestListParameterValue parameterValue = new RestListParameterValue(getName(), value, getDescription());
 
-    getValues();
     checkValue(parameterValue);
     return parameterValue;
   }
@@ -242,7 +241,6 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   {
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
 
-    getValues();
     checkValue(value);
     return value;
   }
@@ -258,7 +256,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     if(value == null || value.getValue() == null) {
       return false;
     }
-
+    getValues();
     return values.stream()
       .map(ValueItem::getValue)
       .filter(Objects::nonNull)
