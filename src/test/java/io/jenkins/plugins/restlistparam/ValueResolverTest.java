@@ -8,6 +8,7 @@ import io.jenkins.plugins.restlistparam.model.ValueItem;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.List;
 
 public class ValueResolverTest {
@@ -20,6 +21,46 @@ public class ValueResolverTest {
     Assert.assertEquals(3, res.getValue().size());
     Assert.assertArrayEquals(new String[]{"v10.6.4", "v10.6.3", "v10.6.2"},
                              res.getValue().stream().map(ValueItem::getValue).toArray());
+    Assert.assertArrayEquals(new String[]{"v10.6.4", "v10.6.3", "v10.6.2"},
+                             res.getValue().stream().map(ValueItem::getDisplayValue).toArray());
+  }
+
+  @Test
+  public void resolveJsonPathNumberLikeValuesTest() {
+    ResultContainer<List<ValueItem>> res = ValueResolver.resolveJsonPath(TestConst.numberLikeTestJson, "$.*.name", "$");
+    Assert.assertNotNull(res);
+    Assert.assertFalse(res.getErrorMsg().isPresent());
+    Assert.assertEquals(3, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{"2024.19", "2024.20", "2024.0"},
+                             res.getValue().stream().map(ValueItem::getValue).toArray());
+    Assert.assertArrayEquals(new String[]{"2024.19", "2024.20", "2024.0"},
+                             res.getValue().stream().map(ValueItem::getDisplayValue).toArray());
+  }
+
+  @Test
+  public void resolveJsonPathNumberValuesTest() {
+    ResultContainer<List<ValueItem>> res = ValueResolver.resolveJsonPath(TestConst.numberValuesTestJson, "$.*.value", "$");
+    Assert.assertNotNull(res);
+    Assert.assertFalse(res.getErrorMsg().isPresent());
+    Assert.assertEquals(3, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{"1.0", "10", "11.5"},
+                             res.getValue().stream().map(ValueItem::getValue).toArray());
+    // trailing 0 and decimal points are shaved off numbers by JSONStringer
+    Assert.assertArrayEquals(new String[]{"1", "10", "11.5"},
+                             res.getValue().stream().map(ValueItem::getDisplayValue).toArray());
+  }
+
+  @Test
+  public void resolveJsonPathMixedTypeValuesTest() {
+    ResultContainer<List<ValueItem>> res = ValueResolver.resolveJsonPath(TestConst.mixedTypeValuesTestJson, "$.*.value", "$");
+    Assert.assertNotNull(res);
+    Assert.assertFalse(res.getErrorMsg().isPresent());
+    Assert.assertEquals(5, res.getValue().size());
+    Assert.assertArrayEquals(new String[]{"1.0", "10", "11.50", "true", "false"},
+                             res.getValue().stream().map(ValueItem::getValue).toArray());
+    // trailing 0 and decimal points are shaved off numbers by JSONStringer
+    Assert.assertArrayEquals(new String[]{"1", "10", "11.50", "true", "false"},
+                             res.getValue().stream().map(ValueItem::getDisplayValue).toArray());
   }
 
   @Test

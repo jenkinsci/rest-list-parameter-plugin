@@ -5,6 +5,7 @@ import io.jenkins.plugins.restlistparam.Messages;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
+import org.json.JSONStringer;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
@@ -125,8 +126,7 @@ public class ValueResolver {
           resolved.stream()
                   .map(JsonPath::parse)
                   .map(context -> context.read("$"))
-                  .map(ValueResolver::convertToString)
-                  .map(value -> new ValueItem(value, parseDisplayValue(value, displayExpression)))
+                  .map(value -> new ValueItem(convertToString(value), parseDisplayValue(convertToJson(value), displayExpression)))
                   .collect(Collectors.toList())
         );
       }
@@ -155,8 +155,12 @@ public class ValueResolver {
     return container;
   }
 
+  private static String convertToJson(Object obj) {
+    return JSONStringer.valueToString(obj);
+  }
+
   public static String convertToString(Object obj) {
-    if (obj instanceof Map) {
+    if (obj instanceof Map || obj instanceof List) {
       return JsonPath.parse(obj).jsonString();
     }
     else if (obj instanceof Integer) {
@@ -164,6 +168,12 @@ public class ValueResolver {
     }
     else if (obj instanceof Float) {
       return Float.toString((Float) obj);
+    }
+    else if (obj instanceof Double) {
+      return Double.toString((Double) obj);
+    }
+    else if (obj instanceof Boolean) {
+      return Boolean.toString((Boolean) obj);
     }
     else if (obj instanceof String) {
       return (String) obj;
