@@ -34,6 +34,48 @@ public class TestConst {
     "  }\n" +
     "]\n";
 
+  public static final String numberLikeTestJson = "[\n" +
+    "  {\n" +
+    "    \"name\": \"2024.19\",\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"name\": \"2024.20\",\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"name\": \"2024.0\",\n" +
+    "  }\n" +
+    "]\n";
+
+  public static final String numberValuesTestJson = "[\n" +
+    "  {\n" +
+    "    \"value\": 1.0\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"value\": 10\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"value\": 11.50\n" +
+    "  }\n" +
+    "]\n";
+
+  public static final String mixedTypeValuesTestJson = "[\n" +
+    "  {\n" +
+    "    \"value\": 1.0\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"value\": 10\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"value\": \"11.50\"\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"value\": true\n" +
+    "  },\n" +
+    "  {\n" +
+    "    \"value\": false\n" +
+    "  }\n" +
+    "]\n";
+
   public static final String validJsonValueItem = "{" +
     "\"name\":\"v10.6.4\"," +
     "\"zipball_url\":\"https://api.github.com/repos/jellyfin/jellyfin/zipball/v10.6.4\"," +
