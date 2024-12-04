@@ -103,7 +103,7 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>okhttp-api</artifactId>
-      <version>3.14.9</version>
+      <version>4.11.0-181.v1de5b_83857df</version>
     </dependency>
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
