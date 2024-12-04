@@ -144,7 +144,11 @@ public class RestValueService {
     try (Response response = client.newCall(request).execute()) {
       int statusCode = response.code();
       if (statusCode < 400) {
-        container.setValue(response.body() != null ? response.body().string() : "");
+        String value = "";
+        okhttp3.ResponseBody body = response.body();
+        if (body != null)
+          value = body.string();
+        container.setValue(value);
       }
       else if (statusCode < 500) {
         log.warning(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
