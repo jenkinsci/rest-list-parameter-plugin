@@ -5,17 +5,17 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.88</version>
+    <version>5.3</version>
     <relativePath />
   </parent>
 
   <properties>
     <changelist>999999-SNAPSHOT</changelist>
     <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-    <jenkins.version>2.387.1</jenkins.version>
-    <bom.artifactId>2.387.x</bom.artifactId>
-    <bom.version>2143.ve4c3c9ec790a</bom.version>
-    <java.level>11</java.level>
+    <jenkins.version>2.479.1</jenkins.version>
+    <bom.artifactId>2.479.x</bom.artifactId>
+    <bom.version>3768.veb_7cdc7a_6cc1</bom.version>
+    <java.level>17</java.level>
     <!--
     Other properties you may want to use:
       ~ jenkins-test-harness.version: Jenkins Test Harness version you use to test the plugin. For Jenkins version >= 1.580.1 use JTH 2.0 or higher.
@@ -44,6 +44,11 @@
       <id>h1dden_da3m0n</id>
       <name>h1dden-da3m0n</name>
       <url>https://github.com/h1dden-da3m0n</url>
+    </developer>
+    <developer>
+      <id>mymarche</id>
+      <name>Mikhail Marchenko</name>
+      <url>https://github.com/mymarche</url>
     </developer>
   </developers>
 
@@ -103,12 +108,12 @@
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>okhttp-api</artifactId>
-      <version>3.14.9</version>
+      <version>4.11.0-181.v1de5b_83857df</version>
     </dependency>
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
-      <version>2.8.0</version>
+      <version>2.9.0</version>
     </dependency>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
@@ -120,7 +125,7 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>antisamy-markup-formatter</artifactId>
-      <version>159.v25b_c67cd35fb_</version>
+      <version>162.v0e6ec0fcfcf6</version>
       <optional>true</optional>
     </dependency>
 
