@@ -5,13 +5,12 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.66</version>
+    <version>4.88</version>
     <relativePath />
   </parent>
 
   <properties>
-    <revision>1.7.1</revision>
-    <changelist>-SNAPSHOT</changelist>
+    <changelist>999999-SNAPSHOT</changelist>
     <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
     <jenkins.version>2.387.1</jenkins.version>
     <bom.artifactId>2.387.x</bom.artifactId>
@@ -29,8 +28,8 @@
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>rest-list-parameter</artifactId>
   <inceptionYear>2020</inceptionYear>
-  <url>https://github.com/jenkinsci/${project.artifactId}-plugin/blob/${project.artifactId}-${revision}/README.adoc</url>
-  <version>${revision}${changelist}</version>
+  <!--url>https://github.com/jenkinsci/${project.artifactId}-plugin/blob/${project.artifactId}-${revision}/README.adoc</url-->
+  <version>${changelist}</version>
   <packaging>hpi</packaging>
 
   <licenses>
