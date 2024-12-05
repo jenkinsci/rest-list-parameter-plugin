@@ -14,8 +14,8 @@
     <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
     <jenkins.version>2.479.1</jenkins.version>
     <bom.artifactId>2.479.x</bom.artifactId>
-    <bom.version>3768.veb_7cdc7a_6cc1</bom.version>
-    <java.level>17</java.level>
+    <bom.version>3761.vd922730f0fd2</bom.version>
+
     <!--
     Other properties you may want to use:
       ~ jenkins-test-harness.version: Jenkins Test Harness version you use to test the plugin. For Jenkins version >= 1.580.1 use JTH 2.0 or higher.
