@@ -5,16 +5,16 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.3</version>
+    <version>5.7</version>
     <relativePath />
   </parent>
 
   <properties>
     <changelist>999999-SNAPSHOT</changelist>
-    <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
-    <jenkins.version>2.479.1</jenkins.version>
-    <bom.artifactId>2.479.x</bom.artifactId>
-    <bom.version>3761.vd922730f0fd2</bom.version>
+    <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
+    <jenkins.baseline>2.479</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.1</jenkins.version>
+    <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
 
     <!--
     Other properties you may want to use:
@@ -28,7 +28,7 @@
   <groupId>io.jenkins.plugins</groupId>
   <artifactId>rest-list-parameter</artifactId>
   <inceptionYear>2020</inceptionYear>
-  <!--url>https://github.com/jenkinsci/${project.artifactId}-plugin/blob/${project.artifactId}-${revision}/README.adoc</url-->
+  <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
   <version>${changelist}</version>
   <packaging>hpi</packaging>
 
@@ -58,18 +58,18 @@
   </issueManagement>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/${project.artifactId}-plugin.git</connection>
-    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-    <tag>HEAD</tag>
+    <connection>scm:git:https://github.com/${gitHubRepo}.git</connection>
+    <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
+    <url>https://github.com/${gitHubRepo}</url>
+    <tag>${scmTag}</tag>
   </scm>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
-        <artifactId>bom-${bom.artifactId}</artifactId>
-        <version>${bom.version}</version>
+        <artifactId>bom-${jenkins.baseline}.x</artifactId>
+        <version>3944.v1a_e4f8b_452db_</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -111,9 +111,8 @@
       <version>4.11.0-181.v1de5b_83857df</version>
     </dependency>
     <dependency>
-      <groupId>com.jayway.jsonpath</groupId>
-      <artifactId>json-path</artifactId>
-      <version>2.9.0</version>
+      <groupId>io.jenkins.plugins</groupId>
+      <artifactId>json-path-api</artifactId>
     </dependency>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>

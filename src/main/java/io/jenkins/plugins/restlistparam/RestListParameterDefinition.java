@@ -192,8 +192,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   public List<ValueItem> getValues() {
     Item context = null;
 
-    if (Stapler.getCurrentRequest() != null) {
-      context = Stapler.getCurrentRequest().findAncestorObject(Item.class);
+    if (Stapler.getCurrentRequest2() != null) {
+      context = Stapler.getCurrentRequest2().findAncestorObject(Item.class);
     }
 
     Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
@@ -236,7 +236,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   }
 
   @Override
-  public ParameterValue createValue(final StaplerRequest req,
+  public ParameterValue createValue(final StaplerRequest2 req,
                                     final JSONObject jo)
   {
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
