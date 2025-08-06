@@ -10,7 +10,7 @@
 .select2-container--bootstrap4 .select2-dropdown.select2-dropdown--below {
   border: 1px solid var(--input-border);
   box-shadow: 0 0 0 .2rem rgba(0, 123, 255, 0.25);
-  background-color: var(--menu-bg-color);
+  background-color: var(--input-color);
 }
 
 .select2-container--bootstrap4 .select2-search, .select2-search--dropdown .select2-search__field {
