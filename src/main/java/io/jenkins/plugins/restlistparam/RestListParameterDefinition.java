@@ -18,7 +18,7 @@ import io.jenkins.plugins.restlistparam.util.CredentialsUtils;
 import io.jenkins.plugins.restlistparam.util.PathExpressionValidationUtils;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.*;
 import org.kohsuke.stapler.verb.POST;
@@ -75,13 +75,13 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.restEndpoint = restEndpoint;
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
-    this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
+    this.credentialId = credentialId != null && !credentialId.trim().isEmpty() ? credentialId : "";
     if (mimeType == MimeType.APPLICATION_JSON) {
-      this.displayExpression = StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
+      this.displayExpression = !displayExpression.isBlank() ? displayExpression : "$";
     }
-    this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
+    this.defaultValue = defaultValue != null && !defaultValue.trim().isEmpty() ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
-    this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
+    this.filter = !filter.isBlank() ? filter : ".*";
     this.cacheTime = cacheTime != null ? cacheTime : config.getCacheTime();
     this.errorMsg = "";
     this.values = Collections.emptyList();
@@ -105,13 +105,13 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.restEndpoint = restEndpoint;
     this.mimeType = mimeType;
     this.valueExpression = valueExpression;
-    this.credentialId = StringUtils.isNotBlank(credentialId) ? credentialId : "";
+    this.credentialId = credentialId != null && !credentialId.trim().isEmpty() ? credentialId : "";
     if (mimeType == MimeType.APPLICATION_JSON) {
-      this.displayExpression = StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
+      this.displayExpression = !displayExpression.isBlank() ? displayExpression : "$";
     }
-    this.defaultValue = StringUtils.isNotBlank(defaultValue) ? defaultValue : "";
+    this.defaultValue = defaultValue != null && !defaultValue.trim().isEmpty() ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
-    this.filter = StringUtils.isNotBlank(filter) ? filter : ".*";
+    this.filter = !filter.isBlank() ? filter : ".*";
     this.cacheTime = cacheTime != null ? cacheTime : config.getCacheTime();
     this.errorMsg = "";
     this.values = values;
@@ -139,7 +139,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   public String getDisplayExpression() {
     if (mimeType == MimeType.APPLICATION_JSON) {
-      return StringUtils.isNotBlank(displayExpression) ? displayExpression : "$";
+      return !displayExpression.isBlank() ? displayExpression : "$";
     }
     return "";
   }
@@ -328,7 +328,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         context.checkPermission(Item.CONFIGURE);
       }
 
-      if (StringUtils.isNotBlank(value)) {
+      if (value != null && !value.trim().isEmpty()) {
         if (value.matches("^http(s)?://.+")) {
           Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
           return RestValueService.doBasicValidation(value, credentials.orElse(null));
@@ -350,7 +350,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         context.checkPermission(Item.CONFIGURE);
       }
 
-      if (StringUtils.isNotBlank(value)) {
+      if (value != null && !value.trim().isEmpty()) {
         switch (mimeType) {
           case APPLICATION_JSON:
             return PathExpressionValidationUtils.doCheckJsonPathExpression(value);
@@ -412,17 +412,17 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         context.checkPermission(Item.CONFIGURE);
       }
 
-      if (StringUtils.isBlank(restEndpoint)) {
+      if (restEndpoint == null || restEndpoint.trim().isEmpty()) {
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
       }
       if (mimeType == null) {
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_UnknownMime());
       }
-      if (StringUtils.isBlank(valueExpression)) {
+      if (valueExpression == null || valueExpression.isBlank()) {
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
       }
       Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
-      if (StringUtils.isNotBlank(credentialId) && !credentials.isPresent()) {
+      if (credentialId != null && !credentialId.trim().isEmpty() && !credentials.isPresent()) {
         return FormValidation.error(Messages.RLP_CredentialsUtils_ValidationErr_CannotFind());
       }
 
@@ -432,7 +432,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         mimeType,
         0,
         valueExpression,
-        StringUtils.isNotBlank(displayExpression) ? displayExpression : "$",
+        !displayExpression.isBlank() ? displayExpression : "$",
         filter,
         valueOrder);
 

@@ -14,7 +14,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.restlistparam.Messages;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import java.util.Collections;
@@ -65,7 +65,7 @@ public class CredentialsUtils {
       return FormValidation.ok();
     }
 
-    if (StringUtils.isBlank(credentialsId)) {
+    if (credentialsId == null || credentialsId.isBlank()) {
       return FormValidation.ok();
     }
     if (credentialsId.startsWith("${") && credentialsId.endsWith("}")) {
@@ -80,7 +80,7 @@ public class CredentialsUtils {
   public static Optional<StandardCredentials> findCredentials(final Item context,
                                                               final String credentialsId)
   {
-    if (StringUtils.isBlank(credentialsId)) {
+    if (credentialsId == null || credentialsId.isBlank()) {
       return Optional.empty();
     }
     List<StandardCredentials> lookupCredentials = CredentialsProvider.lookupCredentials(
