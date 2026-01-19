@@ -14,7 +14,7 @@ import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.commons.lang.StringUtils;
+
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import java.io.IOException;
@@ -311,7 +311,7 @@ public class RestValueService {
   }
 
   private static boolean isFilterSet(String filter) {
-    return StringUtils.isNotBlank(filter) && !filter.equalsIgnoreCase(".*");
+    return filter != null && !filter.isBlank() && !filter.equalsIgnoreCase(".*");
   }
 
   private static boolean isOrderSet(ValueOrder order) {
