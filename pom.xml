@@ -24,6 +24,7 @@
     -->
     <ban-commons-lang-2.skip>false</ban-commons-lang-2.skip>
     <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
+    <hpi.strictBundledArtifacts>true</hpi.strictBundledArtifacts>
   </properties>
 
   <name>REST List Parameter</name>
@@ -92,8 +93,8 @@
       <artifactId>plain-credentials</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>jackson2-api</artifactId>
+        <groupId>io.jenkins.plugins</groupId>
+        <artifactId>json-api</artifactId>
     </dependency>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
