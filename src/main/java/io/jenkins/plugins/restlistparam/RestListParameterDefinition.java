@@ -77,7 +77,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.valueExpression = valueExpression;
     this.credentialId = credentialId != null && !credentialId.trim().isEmpty() ? credentialId : "";
     if (mimeType == MimeType.APPLICATION_JSON) {
-      this.displayExpression = !displayExpression.isBlank() ? displayExpression : "$";
+      this.displayExpression = displayExpression != null && !displayExpression.isBlank() ? displayExpression : "$";
     }
     this.defaultValue = defaultValue != null && !defaultValue.trim().isEmpty() ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
@@ -107,7 +107,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.valueExpression = valueExpression;
     this.credentialId = credentialId != null && !credentialId.trim().isEmpty() ? credentialId : "";
     if (mimeType == MimeType.APPLICATION_JSON) {
-      this.displayExpression = !displayExpression.isBlank() ? displayExpression : "$";
+      this.displayExpression = displayExpression != null && !displayExpression.isBlank() ? displayExpression : "$";
     }
     this.defaultValue = defaultValue != null && !defaultValue.trim().isEmpty() ? defaultValue : "";
     this.valueOrder = valueOrder != null ? valueOrder : ValueOrder.NONE;
@@ -139,7 +139,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
 
   public String getDisplayExpression() {
     if (mimeType == MimeType.APPLICATION_JSON) {
-      return !displayExpression.isBlank() ? displayExpression : "$";
+      return displayExpression != null && !displayExpression.isBlank() ? displayExpression : "$";
     }
     return "";
   }
