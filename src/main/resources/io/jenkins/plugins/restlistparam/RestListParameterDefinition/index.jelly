@@ -6,6 +6,7 @@
 
   <st:adjunct includes="io.jenkins.plugins.jquery3"/>
   <st:adjunct includes="io.jenkins.plugins.select2"/>
+  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.index"/>
   <j:set var="id" value="${h.generateId()}"/>
 
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
@@ -18,7 +19,7 @@
       <input type="hidden" name="name" value="${it.name}"/>
       <input type="hidden" name="description" value="${it.description}"/>
 
-      <select id="${id}-select" class="setting-input" name="value">
+      <select id="${id}-select" data-select2-id="${id}-select" class="setting-input" name="value">
         <j:forEach var="item" items="${it.values}" varStatus="loop">
           <f:option value="${item.value}" selected="${item.displayValue.equals(it.defaultValue)}">
             ${item.displayValue}
@@ -50,15 +51,5 @@
       </tr>
     </j:when>
   </j:choose>
-
-  <script type="text/javascript">
-    jQuery3.noConflict();
-    jQuery3(document).ready(function () {
-      jQuery3("#${id}-select").select2({
-        placeholder: "Select an option",
-        theme: 'bootstrap4',
-      });
-    });
-  </script>
 
 </j:jelly>
