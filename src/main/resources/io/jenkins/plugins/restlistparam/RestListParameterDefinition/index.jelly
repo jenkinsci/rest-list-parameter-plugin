@@ -6,7 +6,7 @@
 
   <st:adjunct includes="io.jenkins.plugins.jquery3"/>
   <st:adjunct includes="io.jenkins.plugins.select2"/>
-  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.index"/>
+  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.selectInit"/>
   <j:set var="id" value="${h.generateId()}"/>
 
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
