@@ -43,6 +43,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   private String filter;
   private Integer cacheTime;
   private boolean allowEmptyValue;
+  private boolean enableValidation = true;
   private String errorMsg;
   private List<ValueItem> values;
 
@@ -102,6 +103,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                       final Integer cacheTime,
                                       final String defaultValue,
                                       final boolean allowEmptyValue,
+                                      final boolean enableValidation,
                                       final List<ValueItem> values)
   {
     super(name);
@@ -118,6 +120,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.filter = !filter.isBlank() ? filter : ".*";
     this.cacheTime = cacheTime != null ? cacheTime : config.getCacheTime();
     this.allowEmptyValue = allowEmptyValue;
+    this.enableValidation = enableValidation;
     this.errorMsg = "";
     this.values = values;
   }
@@ -195,6 +198,15 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     this.allowEmptyValue = allowEmptyValue;
   }
 
+  public boolean isEnableValidation() {
+    return enableValidation;
+  }
+
+  @DataBoundSetter
+  public void setEnableValidation(final boolean enableValidation) {
+    this.enableValidation = enableValidation;
+  }
+
   void setErrorMsg(final String errorMsg) {
     this.errorMsg = errorMsg;
   }
@@ -235,7 +247,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
         getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(),
         ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), displayExpression),
-        isAllowEmptyValue(), getValues());
+        isAllowEmptyValue(), isEnableValidation(), getValues());
     }
     else {
       return this;
@@ -274,6 +286,9 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     if (allowEmptyValue && "".equals(value.getValue())) {
       return true;
     }
+    if (!enableValidation) {
+      return true;
+    }
     getValues();
     return values.stream()
       .map(ValueItem::getValue)
@@ -285,7 +300,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
   public int hashCode() {
     return Objects.hash(
       getName(), getDescription(), getRestEndpoint(), getCredentialId(),
-      getMimeType(), getValueExpression(), getFilter(), allowEmptyValue);
+      getMimeType(), getValueExpression(), getFilter(), allowEmptyValue, enableValidation);
   }
 
   @Override
@@ -319,6 +334,9 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       return false;
     }
     if (allowEmptyValue != other.allowEmptyValue) {
+      return false;
+    }
+    if (enableValidation != other.enableValidation) {
       return false;
     }
     return Objects.equals(defaultValue, other.defaultValue);

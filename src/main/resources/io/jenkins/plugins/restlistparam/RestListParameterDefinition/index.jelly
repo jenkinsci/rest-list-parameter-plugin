@@ -19,16 +19,33 @@
       <input type="hidden" name="name" value="${it.name}"/>
       <input type="hidden" name="description" value="${it.description}"/>
 
-      <select id="${id}-select" data-select2-id="${id}-select" data-allow-empty-value="${it.allowEmptyValue}" class="setting-input" name="value">
-        <j:if test="${it.allowEmptyValue}">
-          <f:option value="" selected="${empty it.defaultValue}">&#8212;</f:option>
-        </j:if>
-        <j:forEach var="item" items="${it.values}" varStatus="loop">
-          <f:option value="${item.value}" selected="${item.displayValue.equals(it.defaultValue)}">
-            ${item.displayValue}
-          </f:option>
-        </j:forEach>
-      </select>
+      <j:choose>
+        <j:when test="${!it.enableValidation}">
+          <!-- Validation disabled: render a free-text input backed by a datalist
+               of fetched values. Users can pick from suggestions or type any
+               value (helpful when paginated APIs do not surface what they need;
+               see jenkinsci/rest-list-parameter-plugin#61 and #86). -->
+          <input id="${id}-input" type="text" class="setting-input" name="value"
+                 value="${it.defaultValue}" list="${id}-datalist" autocomplete="off"/>
+          <datalist id="${id}-datalist">
+            <j:forEach var="item" items="${it.values}" varStatus="loop">
+              <f:option value="${item.value}">${item.displayValue}</f:option>
+            </j:forEach>
+          </datalist>
+        </j:when>
+        <j:otherwise>
+          <select id="${id}-select" data-select2-id="${id}-select" data-allow-empty-value="${it.allowEmptyValue}" class="setting-input" name="value">
+            <j:if test="${it.allowEmptyValue}">
+              <f:option value="" selected="${empty it.defaultValue}">&#8212;</f:option>
+            </j:if>
+            <j:forEach var="item" items="${it.values}" varStatus="loop">
+              <f:option value="${item.value}" selected="${item.displayValue.equals(it.defaultValue)}">
+                ${item.displayValue}
+              </f:option>
+            </j:forEach>
+          </select>
+        </j:otherwise>
+      </j:choose>
 
       <j:choose>
         <j:when test="${divBasedFormLayout}">

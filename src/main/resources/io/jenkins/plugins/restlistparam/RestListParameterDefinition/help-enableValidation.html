@@ -1,0 +1,12 @@
+<div>
+  When checked (the default), submitted values must match one of the entries returned by the
+  REST endpoint and the build form renders a strict dropdown.
+  <p>
+    Uncheck it to render a free-text input backed by a datalist of the fetched values: the user
+    can still pick a suggestion, but is also allowed to type or paste any value, and the build
+    will not reject it. This is a partial workaround for paginated REST APIs whose desired
+    value falls outside the first page returned to the plugin
+    (see <a href="https://github.com/jenkinsci/rest-list-parameter-plugin/issues/61">#61</a>
+    and <a href="https://github.com/jenkinsci/rest-list-parameter-plugin/issues/86">#86</a>).
+  </p>
+</div>

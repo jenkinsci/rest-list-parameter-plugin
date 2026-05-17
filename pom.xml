@@ -162,13 +162,61 @@
             <id>default-testCompile</id>
             <configuration>
               <!--
-                Disable annotation processing during testCompile. Without this, sezpoz runs against
-                test sources, finds no @Extension classes, and overwrites the index produced by the
-                main compile (target/classes/META-INF/annotations/hudson.Extension) with an empty
-                file. The packaged hpi then has no extension index and Jenkins reports
-                "Invalid parameter type RESTList" because the @Symbol descriptor never registers.
+                Disable annotation processing during testCompile and disable maven-compiler-plugin
+                3.14's incremental-build cleanup. Without both, the annotation-indexer index
+                produced by the main compile (target/classes/META-INF/annotations/hudson.Extension)
+                disappears: either the processor overwrites it with an empty file when it finds no
+                @Extension classes in test sources, or the incremental-build cleanup wipes the
+                target/classes/META-INF/annotations/ directory on the assumption that it's stale.
+                Either way, the packaged hpi ships without the @Extension index and Jenkins
+                silently drops every RestListParameterDefinition on XStream deserialization
+                ("Expected 1 instance of RestListParameterGlobalConfig but got 0"), which surfaces
+                as parameter values being empty at build time and "Invalid parameter type RESTList"
+                from the Pipeline DSL.
               -->
-              <compilerArgument>-proc:none</compilerArgument>
+              <proc>none</proc>
+              <useIncrementalCompilation>false</useIncrementalCompilation>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!--
+        Belt-and-braces: even with the testCompile overrides above, running the full lifecycle as
+        one invocation (`mvn clean package`) sometimes still empties
+        target/classes/META-INF/annotations/ before the hpi is built. Stash the directory right
+        after the main compile and restore it just before packaging.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>stash-extension-index</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <mkdir dir="${project.build.directory}/extension-index-stash"/>
+                <copy todir="${project.build.directory}/extension-index-stash" failonerror="false">
+                  <fileset dir="${project.build.outputDirectory}/META-INF/annotations" erroronmissingdir="false"/>
+                </copy>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>restore-extension-index</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <copy todir="${project.build.outputDirectory}/META-INF/annotations" failonerror="false">
+                  <fileset dir="${project.build.directory}/extension-index-stash" erroronmissingdir="false"/>
+                </copy>
+              </target>
             </configuration>
           </execution>
         </executions>

@@ -111,4 +111,52 @@ class RestListParameterDefinitionJenkinsTest {
       // ok
     }
   }
+
+  @Test
+  void enableValidationDefaultsToTrue(JenkinsRule r) {
+    RestListParameterDefinition def = new RestListParameterDefinition(
+      "p", "d", "http://127.0.0.1:1/none", "", MimeType.APPLICATION_JSON, "$.*", "$");
+    assertTrue(def.isEnableValidation());
+  }
+
+  @Test
+  void isValidAcceptsArbitraryValueWhenValidationDisabled(JenkinsRule r) {
+    RestListParameterDefinition def = new RestListParameterDefinition(
+      "p", "d", "http://127.0.0.1:1/none", "", MimeType.APPLICATION_JSON, "$.*", "$",
+      ValueOrder.NONE, ".*", 0, "", false);
+    def.setEnableValidation(false);
+    // With validation disabled, isValid must NOT trigger getValues() and must accept
+    // anything non-null — that's the whole point of bypassing pagination limits.
+    assertTrue(def.isValid(new StringParameterValue("p", "freely-typed-value")));
+  }
+
+  @Test
+  void createValueAcceptsArbitraryWhenValidationDisabled(JenkinsRule r) {
+    RestListParameterDefinition def = new RestListParameterDefinition(
+      "p", "d", "http://127.0.0.1:1/none", "", MimeType.APPLICATION_JSON, "$.*", "$",
+      ValueOrder.NONE, ".*", 0, "", false);
+    def.setEnableValidation(false);
+    try {
+      def.createValue("page-2-value-not-in-first-page");
+    } catch (IllegalArgumentException e) {
+      fail("arbitrary value should be accepted when enableValidation=false: " + e.getMessage());
+    }
+  }
+
+  @Test
+  void pipelineDslAcceptsEnableValidationFalse(JenkinsRule r) throws Exception {
+    DescribableModel<RestListParameterDefinition> model = new DescribableModel<>(RestListParameterDefinition.class);
+    Map<String, Object> args = new HashMap<>();
+    args.put("name", "VERSION");
+    args.put("description", "pick a version");
+    args.put("restEndpoint", "http://127.0.0.1:1/none");
+    args.put("credentialId", "");
+    args.put("mimeType", "APPLICATION_JSON");
+    args.put("valueExpression", "$.tags");
+    args.put("displayExpression", "$");
+    args.put("enableValidation", false);
+
+    RestListParameterDefinition def = model.instantiate(args);
+    assertFalse(def.isEnableValidation(), "enableValidation DataBoundSetter not applied");
+  }
 }
