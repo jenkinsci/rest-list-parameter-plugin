@@ -144,6 +144,29 @@ class RestListParameterDefinitionJenkinsTest {
   }
 
   @Test
+  void isValidRejectsEmptyWhenValidationDisabledAndEmptyNotAllowed(JenkinsRule r) {
+    // enableValidation and allowEmptyValue are orthogonal: turning off validation lets the
+    // user type arbitrary NON-empty values, but an empty submission is still rejected while
+    // allowEmptyValue is unchecked.
+    RestListParameterDefinition def = new RestListParameterDefinition(
+      "p", "d", "http://127.0.0.1:1/none", "", MimeType.APPLICATION_JSON, "$.*", "$",
+      ValueOrder.NONE, ".*", 0, "", false);
+    def.setEnableValidation(false);
+    assertFalse(def.isValid(new StringParameterValue("p", "")));
+    // and a non-empty value is still accepted, without hitting the REST endpoint.
+    assertTrue(def.isValid(new StringParameterValue("p", "page-2-value")));
+  }
+
+  @Test
+  void isValidAcceptsEmptyWhenValidationDisabledAndEmptyAllowed(JenkinsRule r) {
+    RestListParameterDefinition def = new RestListParameterDefinition(
+      "p", "d", "http://127.0.0.1:1/none", "", MimeType.APPLICATION_JSON, "$.*", "$",
+      ValueOrder.NONE, ".*", 0, "", true);
+    def.setEnableValidation(false);
+    assertTrue(def.isValid(new StringParameterValue("p", "")));
+  }
+
+  @Test
   void pipelineDslAcceptsEnableValidationFalse(JenkinsRule r) throws Exception {
     DescribableModel<RestListParameterDefinition> model = new DescribableModel<>(RestListParameterDefinition.class);
     Map<String, Object> args = new HashMap<>();

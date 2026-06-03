@@ -283,8 +283,11 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     if(value == null || value.getValue() == null) {
       return false;
     }
-    if (allowEmptyValue && "".equals(value.getValue())) {
-      return true;
+    // Empty submissions are governed solely by allowEmptyValue, independently of
+    // enableValidation, so the two checkboxes compose orthogonally: disabling validation
+    // permits arbitrary non-empty values but does not silently allow an empty one.
+    if ("".equals(value.getValue())) {
+      return allowEmptyValue;
     }
     if (!enableValidation) {
       return true;
