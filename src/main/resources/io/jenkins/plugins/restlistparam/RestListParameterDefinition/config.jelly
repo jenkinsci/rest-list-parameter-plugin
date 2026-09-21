@@ -1,6 +1,7 @@
 <!-- this is the page fragment displayed to set up a job -->
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.testConfigHeaders"/>
 
   <f:entry title="${%parameter.name}" field="name">
     <f:textbox default="REST_VALUE" />
@@ -54,16 +55,20 @@
       </f:entry>
 
       <f:entry title="${%parameter.customHeaders}" field="customHeaders">
-        <f:repeatableProperty field="customHeaders" add="${%parameter.customHeaders.add}" />
+        <div class="rlp-custom-headers">
+          <f:repeatableProperty field="customHeaders" add="${%parameter.customHeaders.add}" />
+        </div>
       </f:entry>
     </f:section>
   </f:advanced>
 
+  <!-- filled from the header rows by testConfigHeaders.js only while Test Configuration reads its fields -->
+  <input type="hidden" name="_.customHeadersJson" value=""/>
   <f:validateButton
       title="${%parameter.testConfig}"
       progress="${%parameter.testing}"
       method="testConfiguration"
-      with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder"
+      with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder,customHeadersJson"
   />
 
   <f:entry title="${%parameter.description}" field="description">

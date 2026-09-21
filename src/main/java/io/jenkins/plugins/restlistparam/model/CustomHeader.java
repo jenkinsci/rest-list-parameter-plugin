@@ -19,6 +19,9 @@ import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -96,6 +99,31 @@ public class CustomHeader extends AbstractDescribableImpl<CustomHeader> implemen
     }
 
     return Optional.of(plainValue);
+  }
+
+  /**
+   * Resolves a list of custom headers to the name/value pairs sent with a request.
+   * Shared by builds and Test Configuration so both send the same headers.
+   *
+   * @param customHeaders The configured headers ({@code null} entries are ignored)
+   * @param context       The job used to look up credentials, or {@code null} for the system context
+   * @return The resolved headers in configuration order, skipping headers without a usable name or value
+   */
+  public static Map<String, String> resolveAll(final List<CustomHeader> customHeaders, final Item context) {
+    Map<String, String> headers = new LinkedHashMap<>();
+    if (customHeaders == null) {
+      return headers;
+    }
+    for (CustomHeader customHeader : customHeaders) {
+      if (customHeader == null) {
+        continue;
+      }
+      String value = customHeader.resolve(context);
+      if (value != null) {
+        headers.put(customHeader.getName().trim(), value);
+      }
+    }
+    return headers;
   }
 
   public static boolean isValidName(final String name) {

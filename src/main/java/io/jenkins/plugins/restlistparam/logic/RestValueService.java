@@ -94,29 +94,35 @@ public class RestValueService {
   }
 
   /**
-   * A basic validation method usable for configuration validation
+   * A basic validation method usable for configuration validation.
+   * <p>
+   * Sends the same {@code Accept} and credential headers as a build, but no custom headers.
+   * A 401 or 403 is therefore reported as a warning pointing at Test Configuration.
    *
    * @param restEndpoint A http/https web address to the REST/Web endpoint
    * @param credentials  The credentials required to access said endpoint
+   * @param mimeType     The MIME type of the expected REST/Web response
    * @return A {@link FormValidation} to be used in the Jenkins configuration UI
    */
   public static FormValidation doBasicValidation(final String restEndpoint,
-                                                 final StandardCredentials credentials)
+                                                 final StandardCredentials credentials,
+                                                 final MimeType mimeType)
   {
     OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(restEndpoint);
     // don't cache the validation response
     Request.Builder builder = new Request.Builder()
       .cacheControl(OkHttpUtils.getCacheControl(0))
-      .url(restEndpoint);
-
-    if (credentials != null) {
-      builder.addHeader(HTTPHeaders.AUTHORIZATION, buildAuthTypeWithCredential(credentials));
-    }
+      .url(restEndpoint)
+      .headers(buildHeaders(credentials, mimeType != null ? mimeType : MimeType.APPLICATION_JSON,
+        Collections.emptyMap()));
 
     try (Response response = client.newCall(builder.build()).execute()) {
       int statusCode = response.code();
       if (statusCode < 400) {
         return FormValidation.ok();
+      }
+      else if (statusCode == 401 || statusCode == 403) {
+        return FormValidation.warning(Messages.RLP_RestValueService_warn_AuthRejected(statusCode));
       }
       else if (statusCode < 500) {
         return FormValidation.error(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
@@ -210,7 +216,10 @@ public class RestValueService {
       .add(HTTPHeaders.ACCEPT, mimeType.getMime());
 
     if (credentials != null) {
-      headBuilder.add(HTTPHeaders.AUTHORIZATION, buildAuthTypeWithCredential(credentials));
+      String authorization = buildAuthTypeWithCredential(credentials);
+      if (!authorization.isEmpty()) {
+        headBuilder.add(HTTPHeaders.AUTHORIZATION, authorization);
+      }
     }
 
     if (customHeaders != null) {

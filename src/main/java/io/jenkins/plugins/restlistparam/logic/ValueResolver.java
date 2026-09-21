@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class ValueResolver {
   private static final Logger log = Logger.getLogger(ValueResolver.class.getName());
@@ -120,15 +120,34 @@ public class ValueResolver {
 
     try {
       final List<Object> resolved = JsonPath.parse(jsonStr).read(expression);
+      final List<ValueItem> items = new ArrayList<>(resolved.size());
+      int displayFallbacks = 0;
 
-      if (!resolved.isEmpty()) {
-        container.setValue(
-          resolved.stream()
-                  .map(JsonPath::parse)
-                  .map(context -> context.read("$"))
-                  .map(value -> new ValueItem(convertToString(value), parseDisplayValue(convertToJson(value), displayExpression)))
-                  .collect(Collectors.toList())
-        );
+      for (Object match : resolved) {
+        if (match == null) {
+          continue;
+        }
+        final String value;
+        try {
+          value = convertToString(match);
+        }
+        catch (ClassCastException ex) {
+          log.warning(Messages.RLP_ValueResolver_warn_jPath_UnconvertibleValue(match.getClass().getName()));
+          continue;
+        }
+        Optional<String> displayValue = readDisplayValue(convertToJson(match), displayExpression);
+        if (!displayValue.isPresent()) {
+          ++displayFallbacks;
+        }
+        items.add(new ValueItem(value, displayValue.orElse(value)));
+      }
+
+      if (displayFallbacks > 0) {
+        log.warning(Messages.RLP_ValueResolver_warn_jPath_DisplayFallback(displayFallbacks, items.size(), displayExpression));
+      }
+
+      if (!items.isEmpty()) {
+        container.setValue(items);
       }
       else {
         log.warning(Messages.RLP_ValueResolver_warn_jPath_NoValues());
@@ -159,12 +178,20 @@ public class ValueResolver {
     return JSONStringer.valueToString(obj);
   }
 
+  /**
+   * Converts a Json-Path match to its textual value.
+   * <p>
+   * {@link Float} and {@link Double} keep their Java formatting; every other {@link Number}
+   * (e.g. {@link Long}, {@link java.math.BigInteger}, {@link java.math.BigDecimal}) uses its own
+   * {@code toString()} so no digits are lost.
+   *
+   * @param obj A non-null Json-Path match
+   * @return The textual value
+   * @throws ClassCastException if the match has a type that cannot be converted
+   */
   public static String convertToString(Object obj) {
     if (obj instanceof Map || obj instanceof List) {
       return JsonPath.parse(obj).jsonString();
-    }
-    else if (obj instanceof Integer) {
-      return Integer.toString((Integer) obj);
     }
     else if (obj instanceof Float) {
       return Float.toString((Float) obj);
@@ -172,8 +199,8 @@ public class ValueResolver {
     else if (obj instanceof Double) {
       return Double.toString((Double) obj);
     }
-    else if (obj instanceof Boolean) {
-      return Boolean.toString((Boolean) obj);
+    else if (obj instanceof Number || obj instanceof Boolean) {
+      return obj.toString();
     }
     else if (obj instanceof String) {
       return (String) obj;
@@ -202,7 +229,35 @@ public class ValueResolver {
   }
 
   private static String parseDisplayValue(String jsonStr, String displayExpression) {
-    return JsonPath.parse(jsonStr).read(displayExpression, String.class);
+    try {
+      return readDisplayValue(jsonStr, displayExpression).orElse(jsonStr);
+    }
+    catch (JsonPathException | IllegalArgumentException ignored) {
+      // not Json or an unusable expression: keep the value verbatim
+      return jsonStr;
+    }
+  }
+
+  /**
+   * Evaluates the display expression on a single entry.
+   *
+   * @param jsonStr           The entry as Json text
+   * @param displayExpression The Json-Path display expression
+   * @return The display value, or empty when the expression finds nothing, yields {@code null},
+   * or yields a result that cannot be converted
+   * @throws InvalidPathException if the display expression is invalid
+   */
+  private static Optional<String> readDisplayValue(String jsonStr, String displayExpression) {
+    try {
+      Object result = JsonPath.parse(jsonStr).read(displayExpression);
+      if (result == null || (result instanceof List && ((List<?>) result).isEmpty())) {
+        return Optional.empty();
+      }
+      return Optional.of(convertToString(result));
+    }
+    catch (PathNotFoundException | ClassCastException ignored) {
+      return Optional.empty();
+    }
   }
 
   /**
