@@ -38,7 +38,7 @@ class CompatibilityJenkinsTest {
   void legacyJobConfigRoundTripsUnchanged(JenkinsRule r) throws Exception {
     FreeStyleProject project = r.jenkins.getItemByFullName("legacy", FreeStyleProject.class);
     assertNotNull(project, "legacy job did not load");
-    String before = project.getConfigFile().asString();
+    String before = normalizeLineEndings(project.getConfigFile().asString());
 
     RestListParameterDefinition def = (RestListParameterDefinition)
       project.getProperty(ParametersDefinitionProperty.class).getParameterDefinition("VERSION");
@@ -62,7 +62,7 @@ class CompatibilityJenkinsTest {
 
     project.save();
 
-    assertEquals(before, project.getConfigFile().asString());
+    assertEquals(before, normalizeLineEndings(project.getConfigFile().asString()));
   }
 
   @Test
@@ -81,5 +81,13 @@ class CompatibilityJenkinsTest {
     EnvVars env = build.getEnvironment(TaskListener.NULL);
     assertEquals(JSON_VALUE, env.get("VERSION"));
     assertEquals(JSON_VALUE, build.getBuildVariableResolver().resolve("VERSION"));
+  }
+
+  /**
+   * Git may check the fixture out with CRLF line endings (e.g. on Windows), while Jenkins writes LF;
+   * only the content is compared.
+   */
+  private static String normalizeLineEndings(final String text) {
+    return text.replace("\r\n", "\n");
   }
 }

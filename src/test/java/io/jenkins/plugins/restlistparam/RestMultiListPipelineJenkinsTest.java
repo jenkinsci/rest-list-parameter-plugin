@@ -18,7 +18,7 @@ class RestMultiListPipelineJenkinsTest {
 
   /**
    * {@code params.TARGETS} is a real list in Pipeline, while the environment holds the Json array. The
-   * {@code sh} step suspends the program, so the list also survives the Pipeline's own serialization.
+   * shell step suspends the program, so the list also survives the Pipeline's own serialization.
    */
   @Test
   void pipelineSeesListAndEnvironmentSeesJsonArray(JenkinsRule r) throws Exception {
@@ -30,7 +30,11 @@ class RestMultiListPipelineJenkinsTest {
       "echo \"is list: ${params.TARGETS instanceof List}, size: ${params.TARGETS.size()}\"\n" +
       "params.TARGETS.each { echo \"element: ${it}\" }\n" +
       "node {\n" +
-      "  sh 'echo \"shell: $TARGETS\"'\n" +
+      "  if (isUnix()) {\n" +
+      "    sh 'echo \"shell: $TARGETS\"'\n" +
+      "  } else {\n" +
+      "    bat 'echo shell: %TARGETS%'\n" +
+      "  }\n" +
       "}\n" +
       "echo \"env: ${env.TARGETS}\"\n" +
       "echo \"after sh: ${params.TARGETS.join('|')}\"\n", true));
