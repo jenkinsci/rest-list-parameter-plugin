@@ -1,0 +1,63 @@
+<!-- this is the page fragment displayed when trying to run the job with a REST Multi List Parameter -->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:st="jelly:stapler"
+         xmlns:f="/lib/form">
+
+  <st:adjunct includes="io.jenkins.plugins.jquery3"/>
+  <st:adjunct includes="io.jenkins.plugins.select2"/>
+  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.selectInit"/>
+  <j:set var="id" value="${h.generateId()}"/>
+  <!-- fetch once per render; also sets it.errorMsg used below -->
+  <j:set var="values" value="${it.values}"/>
+
+  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
+  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-theming-patch.css"/>
+
+  <j:set var="escapeEntryTitleAndDescription" value="false"/>
+  <f:entry title="${h.escape(it.name)}" description="${it.formattedDescription}">
+    <!-- this div is required because of ParametersDefinitionProperty.java#117 -->
+    <div name="parameter" description="${it.description}">
+      <input type="hidden" name="name" value="${it.name}"/>
+
+      <!-- Core submits a select with the multiple attribute as a Json array of the selected options' values,
+           in the order the options are listed. With validation disabled, Select2 tags mode lets the user
+           add entries that are not listed (see jenkinsci/rest-list-parameter-plugin#61 and #86). -->
+      <select id="${id}-select" data-select2-id="${id}-select" data-multiple="true" data-tags="${!it.enableValidation}"
+              class="setting-input" name="value" multiple="multiple">
+        <j:forEach var="item" items="${values}">
+          <f:option value="${item.value}" selected="${it.isDefaultSelected(item)}">
+            ${item.displayValue}
+          </f:option>
+        </j:forEach>
+        <j:forEach var="entry" items="${it.getUnmatchedDefaults(values)}">
+          <f:option value="${entry}" selected="true">${entry}</f:option>
+        </j:forEach>
+      </select>
+
+      <j:choose>
+        <j:when test="${divBasedFormLayout}">
+          <div class="tr" display="${it.errorMsg == '' ? 'none' : ''}">
+            <div class="${it.errorMsg == '' ? '' : 'error'}">
+              ${it.errorMsg}
+            </div>
+          </div>
+        </j:when>
+      </j:choose>
+    </div>
+  </f:entry>
+
+  <j:choose>
+    <j:when test="${!divBasedFormLayout}">
+      <tr display="${it.errorMsg == '' ? 'none' : ''}">
+        <td colspan="2"></td>
+        <td class="${it.errorMsg == '' ? '' : 'error'}"
+            style="margin-top: 0.2rem;"
+            name="errorMsg">
+          ${it.errorMsg}
+        </td>
+      </tr>
+    </j:when>
+  </j:choose>
+
+</j:jelly>

@@ -1,0 +1,16 @@
+<div>
+  When checked (the default), every selected entry must match one of the entries returned by the
+  REST endpoint when the build is submitted, and the build form only offers the fetched entries.
+  <p>
+    Uncheck it to also let the user type entries that are not in the list, each submitted verbatim as
+    its own element. This is a partial workaround for paginated REST APIs whose desired value falls
+    outside the first page returned to the plugin
+    (see <a href="https://github.com/jenkinsci/rest-list-parameter-plugin/issues/61">#61</a>
+    and <a href="https://github.com/jenkinsci/rest-list-parameter-plugin/issues/86">#86</a>).
+    The endpoint is then not contacted to validate a submission.
+  </p>
+  <p>
+    Whether an empty list is accepted remains controlled exclusively by the separate
+    <b>Allow Empty Value</b> option.
+  </p>
+</div>

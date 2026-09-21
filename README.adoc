@@ -34,6 +34,7 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 * Add custom HTTP headers to REST requests
 * Filter/Pars the values of the web response with Json-Path or xPath (depending on MIME type)
 * Set a per-selected default value (as long as that value is within the received value list)
+* Pick several values in one build with the link:#multi-list-parameter[REST Multi List Parameter]
 * User-friendly error communication
 * Response value caching
 * Advanced configuration validation
@@ -271,6 +272,128 @@ pipelineJob('DemoJob') {
   }
 }
 ----
+
+[#multi-list-parameter]
+=== REST Multi List Parameter
+
+The `REST Multi List Parameter` lets the user pick several entries from the same kind of REST response in one build.
+It offers the same configuration as the `REST List Parameter` (endpoint, credentials, MIME type, value and display expressions, filter, order, cache and custom headers) and fetches its entries the same way.
+The build form shows a searchable multi-select.
+
+Its value is an ordered list of strings.
+Entries are kept in the order they are listed in, and duplicates are removed.
+
+==== Definition in Pipeline
+
+The symbols are `RESTMultiList`, `RestMultiList` and `RESTMultiListParam`.
+They take the same properties as `RESTList`.
+
+[source,groovy]
+----
+pipeline {
+  agent any
+  parameters {
+    RESTMultiList(
+      name: 'TARGETS',
+      description: 'Where to deploy',
+      restEndpoint: 'https://inventory.example.com/api/targets',
+      credentialId: '',
+      mimeType: 'APPLICATION_JSON',
+      valueExpression: '$.*.name',
+      defaultValue: '["staging"]', // optional, see below
+      allowEmptyValue: false,      // optional
+      enableValidation: true       // optional
+    )
+  }
+
+  stages {
+    stage('Deploy') {
+      steps {
+        script {
+          params.TARGETS.each { target ->
+            echo "Deploying to ${target}"
+          }
+        }
+      }
+    }
+  }
+}
+----
+
+In Pipeline, `params.TARGETS` is a `List` of strings.
+The same list can be used for fan-out, e.g. `+parallel params.TARGETS.collectEntries { t -> [(t): { echo "deploy ${t}" }] }+`.
+
+In Job DSL the parameter is declared as `+RESTMultiList { ... }+`, with the same properties as `RESTList`.
+
+==== Environment variable
+
+The environment variable (and its upper-cased alias) holds the list as a compact JSON array of JSON strings, for example `["staging","prod"]`.
+An empty list is `[]`.
+Every element is written as a JSON string, even when its text is JSON itself: an element `{"name":"v1"}` becomes `["{\"name\":\"v1\"}"]`.
+
+In a shell step, iterate over the elements with `jq`:
+
+[source,shell]
+----
+echo "$TARGETS" | jq -r '.[]' | while read -r target; do
+  echo "Deploying to $target"
+done
+----
+
+==== Passing the value as a string
+
+The CLI, the remote API, the Pipeline `build` step with a `string` parameter and re-runs pass the value as one string.
+It is read as follows:
+
+* A JSON array whose elements are all JSON strings becomes that list: `["a","c"]` is `a`, `c`.
+* The empty string and `[]` are the empty list.
+* Any other string is a list with that one string: `a` is `a`, and `a,c` is the single element `a,c`.
+
+Strings are never split on commas or any other delimiter.
+
+A single element that is itself a JSON array of strings must be wrapped in an array: `["[\"x\"]"]` is the single element `["x"]`.
+
+[source,groovy]
+----
+build job: 'deploy', parameters: [string(name: 'TARGETS', value: '["staging","prod"]')]
+----
+
+On the remote API, pass the list as one URL-encoded JSON array:
+
+[source,shell]
+----
+curl -X POST "$JENKINS_URL/job/deploy/buildWithParameters" \
+  --user "$USER:$TOKEN" \
+  --data-urlencode 'TARGETS=["staging","prod"]'
+----
+
+Repeating the parameter name (`?TARGETS=staging&TARGETS=prod`) is not supported: Jenkins rejects the request and no build starts.
+
+==== Validation and free-form entries
+
+With `Enable Value Validation` checked (the default), every element must be the value of an entry fetched when the build is submitted.
+If fetching fails at that time, any non-empty list is rejected.
+
+With it unchecked, the user can also type entries that are not in the list; each one is submitted verbatim as its own element, and the endpoint is not contacted to validate the submission.
+This helps with paginated APIs whose wanted value is not on the first page.
+
+An empty list is accepted only when `Allow Empty Value` is checked.
+Empty elements are always rejected.
+A rejected value stops the build with `Illegal value for parameter <name>: <detail>`, where the detail is the first offending element, `""` for an empty element, or `[]` for a disallowed empty list.
+
+==== Default value
+
+The default value refers to entries by their display value and is read with the same string rule: `["Alpha","Gamma"]` preselects two entries, and `Beta` preselects one.
+Default values that match no entry are ignored when validation is enabled; when it is disabled, they are preselected as free-form entries.
+When a build is re-run, the previous selection becomes the new form's default.
+
+==== Known plugin interactions
+
+The value of this parameter is a list, not a string.
+Plugins that assume a parameter value is a string may therefore handle it differently than a `REST List Parameter`:
+
+* Parameterized Trigger's "Current build parameters" copies the parameter value object unchanged, so the list is expected to reach the triggered build as is.
+* Rebuilder (checked with version 332): "Rebuild" opens the multi-select with the previous selection preselected, and the rebuilt build receives the same list.
 
 [#jcasc]
 === Set Global Options via JCasC

@@ -1,0 +1,10 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <j:set var="escapeEntryTitleAndDescription" value="false" />
+  <f:entry title="${h.escape(it.name)}" description="${it.formattedDescription}">
+    <!-- one read-only row per element, so long (e.g. Json) elements stay legible -->
+    <j:forEach var="element" items="${it.value}">
+      <f:textbox name="value" value="${element}" readonly="true" />
+    </j:forEach>
+  </f:entry>
+</j:jelly>
