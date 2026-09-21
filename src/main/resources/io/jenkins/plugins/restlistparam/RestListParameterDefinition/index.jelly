@@ -8,6 +8,8 @@
   <st:adjunct includes="io.jenkins.plugins.select2"/>
   <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.selectInit"/>
   <j:set var="id" value="${h.generateId()}"/>
+  <!-- fetch once per render; also sets it.errorMsg used below -->
+  <j:set var="values" value="${it.values}"/>
 
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-theming-patch.css"/>
@@ -26,9 +28,9 @@
                value (helpful when paginated APIs do not surface what they need;
                see jenkinsci/rest-list-parameter-plugin#61 and #86). -->
           <input id="${id}-input" type="text" class="setting-input" name="value"
-                 value="${it.defaultValue}" list="${id}-datalist" autocomplete="off"/>
+                 value="${it.resolveFreeTextDefault(values)}" list="${id}-datalist" autocomplete="off"/>
           <datalist id="${id}-datalist">
-            <j:forEach var="item" items="${it.values}" varStatus="loop">
+            <j:forEach var="item" items="${values}" varStatus="loop">
               <f:option value="${item.value}">${item.displayValue}</f:option>
             </j:forEach>
           </datalist>
@@ -38,7 +40,7 @@
             <j:if test="${it.allowEmptyValue}">
               <f:option value="" selected="${empty it.defaultValue}">&#8212;</f:option>
             </j:if>
-            <j:forEach var="item" items="${it.values}" varStatus="loop">
+            <j:forEach var="item" items="${values}" varStatus="loop">
               <f:option value="${item.value}" selected="${item.displayValue.equals(it.defaultValue)}">
                 ${item.displayValue}
               </f:option>

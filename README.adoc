@@ -150,6 +150,10 @@ This keeps tokens out of the job configuration and allows credentials to be rota
 Custom headers are applied after the default `Accept` header and the optional authentication header from `Credential ID`.
 If a custom `Authorization` header is configured, it overrides the default Basic or Bearer authentication header.
 
+`Test Configuration` sends the custom headers exactly as a build would, including rows you have added or changed but not saved yet.
+The `REST Endpoint` field check does not send custom headers.
+If the endpoint rejects that check with 401 or 403, it shows a warning instead of an error; use `Test Configuration` to verify the headers.
+
 [#validation]
 === Parameter Config Validation
 

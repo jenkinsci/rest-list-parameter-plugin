@@ -1,6 +1,8 @@
 package io.jenkins.plugins.restlistparam;
 
+import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import hudson.util.Secret;
 import io.jenkins.plugins.restlistparam.logic.RestValueService;
 import io.jenkins.plugins.restlistparam.model.CustomHeader;
@@ -73,5 +75,27 @@ class RestValueServiceTest {
 
     assertEquals("Authorization", header.getName());
     assertEquals("token", header.resolve(null));
+  }
+
+  @Test
+  void unsupportedCredentialTypeSendsNoAuthorizationHeader() throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/list", "[\"a\", \"b\"]");
+
+      ResultContainer<List<ValueItem>> result = RestValueService.get(
+        stub.url("/list"), new UnsupportedCredentials(), MimeType.APPLICATION_JSON, 0, "$.*", "$", null,
+        ValueOrder.NONE);
+
+      assertFalse(result.getErrorMsg().isPresent());
+      assertEquals(1, stub.requestCount("/list"));
+      assertFalse(stub.lastRequest().hasHeader("Authorization"));
+      assertEquals("application/json", stub.lastRequest().header("Accept"));
+    }
+  }
+
+  private static final class UnsupportedCredentials extends BaseStandardCredentials {
+    UnsupportedCredentials() {
+      super(CredentialsScope.GLOBAL, "unsupported", "neither username/password nor secret text");
+    }
   }
 }

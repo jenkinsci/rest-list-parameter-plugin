@@ -18,6 +18,9 @@ import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.CredentialsUtils;
 import io.jenkins.plugins.restlistparam.util.PathExpressionValidationUtils;
 import jenkins.model.Jenkins;
+import hudson.util.Secret;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONException;
 import net.sf.json.JSONObject;
 
 import org.jenkinsci.Symbol;
@@ -25,10 +28,9 @@ import org.kohsuke.stapler.*;
 import org.kohsuke.stapler.verb.POST;
 
 import javax.annotation.Nonnull;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -249,11 +251,30 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       getDisplayExpression(),
       getFilter(),
       getValueOrder(),
-      resolveCustomHeaders(context));
+      CustomHeader.resolveAll(getCustomHeaders(), context));
 
     setErrorMsg(container.getErrorMsg().orElse(""));
     values = container.getValue();
     return values;
+  }
+
+  /**
+   * The prefill for the free-text input (validation disabled). The default value refers to a display value,
+   * as in dropdown mode, so it resolves to the value of the first entry displayed as the default.
+   *
+   * @param values The entries already fetched for this form
+   * @return The matching entry's value, otherwise the default value verbatim
+   */
+  public String resolveFreeTextDefault(final List<ValueItem> values) {
+    String fallback = defaultValue != null ? defaultValue : "";
+    if (fallback.isEmpty() || values == null) {
+      return fallback;
+    }
+    return values.stream()
+      .filter(item -> item != null && fallback.equals(item.getDisplayValue()))
+      .map(ValueItem::getValue)
+      .findFirst()
+      .orElse(fallback);
   }
 
   @Override
@@ -263,7 +284,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       return new RestListParameterDefinition(
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
         getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(),
-        ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), displayExpression),
+        ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), getDisplayExpression()),
         isAllowEmptyValue(), isEnableValidation(), getValues(), getCustomHeaders());
     }
     else {
@@ -362,20 +383,6 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     return Objects.equals(defaultValue, other.defaultValue);
   }
 
-  private Map<String, String> resolveCustomHeaders(final Item context) {
-    Map<String, String> headers = new LinkedHashMap<>();
-    for (CustomHeader customHeader : getCustomHeaders()) {
-      if (customHeader == null) {
-        continue;
-      }
-      String value = customHeader.resolve(context);
-      if (value != null) {
-        headers.put(customHeader.getName().trim(), value);
-      }
-    }
-    return headers;
-  }
-
   @Symbol({"RESTList", "RestList", "RESTListParam"})
   @Extension
   public static class DescriptorImpl extends ParameterDescriptor {
@@ -392,7 +399,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
     @POST
     public FormValidation doCheckRestEndpoint(@AncestorInPath final Item context,
                                               @QueryParameter final String value,
-                                              @QueryParameter final String credentialId)
+                                              @QueryParameter final String credentialId,
+                                              @QueryParameter final MimeType mimeType)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -404,7 +412,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       if (value != null && !value.trim().isEmpty()) {
         if (value.matches("^http(s)?://.+")) {
           Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
-          return RestValueService.doBasicValidation(value, credentials.orElse(null));
+          return RestValueService.doBasicValidation(value, credentials.orElse(null), mimeType);
         }
         return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointUrl());
       }
@@ -476,7 +484,8 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                               @QueryParameter final String valueExpression,
                                               @QueryParameter final String displayExpression,
                                               @QueryParameter final String filter,
-                                              @QueryParameter final ValueOrder valueOrder)
+                                              @QueryParameter final ValueOrder valueOrder,
+                                              @QueryParameter final String customHeadersJson)
     {
       if (context == null) {
         Jenkins.get().checkPermission(Jenkins.ADMINISTER);
@@ -505,10 +514,10 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
         mimeType,
         0,
         valueExpression,
-        !displayExpression.isBlank() ? displayExpression : "$",
+        displayExpression != null && !displayExpression.isBlank() ? displayExpression : "$",
         filter,
         valueOrder,
-        Collections.emptyMap());
+        CustomHeader.resolveAll(parseCustomHeaders(customHeadersJson), context));
 
       Optional<String> errorMsg = container.getErrorMsg();
       List<ValueItem> values = container.getValue();
@@ -519,6 +528,35 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       // values should NEVER be empty here
       // due to all the filtering and error handling done in the RestValueService
       return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), values.get(0).getDisplayValue()));
+    }
+
+    /**
+     * Builds transient custom headers from the form's (possibly unsaved) header rows, which the
+     * Test Configuration button serializes as a Json array of {@code {name, value, credentialId, valuePrefix}}.
+     * Malformed input is treated as no headers.
+     */
+    static List<CustomHeader> parseCustomHeaders(final String customHeadersJson) {
+      if (customHeadersJson == null || customHeadersJson.isBlank()) {
+        return Collections.emptyList();
+      }
+      List<CustomHeader> headers = new ArrayList<>();
+      try {
+        for (Object row : JSONArray.fromObject(customHeadersJson)) {
+          if (!(row instanceof JSONObject)) {
+            continue;
+          }
+          JSONObject json = (JSONObject) row;
+          CustomHeader header = new CustomHeader(json.optString("name", ""));
+          header.setValue(Secret.fromString(json.optString("value", "")));
+          header.setCredentialId(json.optString("credentialId", ""));
+          header.setValuePrefix(json.optString("valuePrefix", ""));
+          headers.add(header);
+        }
+      }
+      catch (JSONException ignored) {
+        return Collections.emptyList();
+      }
+      return headers;
     }
   }
 }

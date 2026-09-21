@@ -2,4 +2,9 @@
   Optional HTTP headers to add to REST requests. Header values can come from a stored secret value or from a Jenkins
   Secret text credential. Custom headers are applied after the default headers, so a custom header with the same name
   replaces the default value.
+  <p>
+    <em>Test Configuration</em> sends these headers exactly as a build would, including rows that are not saved yet.
+    The <em>REST Endpoint</em> field check does not send them, so a 401 or 403 there is only a warning;
+    use <em>Test Configuration</em> to verify endpoints that need custom headers.
+  </p>
 </div>
