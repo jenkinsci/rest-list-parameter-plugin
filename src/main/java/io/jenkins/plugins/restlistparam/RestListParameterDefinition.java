@@ -305,6 +305,7 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
                                     final JSONObject jo)
   {
     RestListParameterValue value = req.bindJSON(RestListParameterValue.class, jo);
+    value.setDescription(getDescription());
 
     checkValue(value);
     return value;
