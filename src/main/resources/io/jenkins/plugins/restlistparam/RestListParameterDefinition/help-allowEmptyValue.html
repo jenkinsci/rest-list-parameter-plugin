@@ -1,4 +1,7 @@
 <div>
   When checked, an extra entry is rendered as the first option of the value list. Selecting it submits
   an empty string, which is also accepted by parameter validation. Useful when the parameter is optional.
+  <br/>
+  An endpoint response that yields no values (or none left after the filter) is then treated as valid:
+  no error is shown on the build form and the build can be started with an empty value.
 </div>

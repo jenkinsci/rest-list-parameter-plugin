@@ -333,7 +333,7 @@ public class RestValueService {
         }
         container.setValue(updatedValues);
       } else {
-        container.setErrorMsg(Messages.RLP_RestValueService_info_FilterReturnedNoValues(filter));
+        container.setNoValues(Messages.RLP_RestValueService_info_FilterReturnedNoValues(filter));
       }
     }
     catch (Exception ex) {

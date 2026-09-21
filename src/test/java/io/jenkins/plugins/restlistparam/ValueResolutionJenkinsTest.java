@@ -198,6 +198,58 @@ class ValueResolutionJenkinsTest {
     }
   }
 
+  // Empty result (#209)
+
+  @Test
+  void emptyResultIsNoErrorWhenEmptyValueAllowed(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/empty", "[]");
+      stub.respondJson("/filtered", "[\"a\", \"b\"]");
+      stub.respond("/broken", 200, "application/json", "{not json");
+
+      assertEquals("", emptyAllowed(stub.url("/empty"), ".*").getErrorMsg());
+      assertEquals("", emptyAllowed(stub.url("/filtered"), "x.*").getErrorMsg());
+      assertEquals(Messages.RLP_ValueResolver_warn_jPath_MalformedJson(), emptyAllowed(stub.url("/broken"), ".*").getErrorMsg(),
+        "genuine errors must still be reported");
+
+      RestListParameterDefinition notAllowed = new RestListParameterDefinition(
+        "p", "d", stub.url("/empty"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 0, "", false);
+      notAllowed.getValues();
+      assertEquals("Json-Path expression yielded no results", notAllowed.getErrorMsg());
+    }
+  }
+
+  @Test
+  void emptyResultStartsBuildWithEmptyValue(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/empty", "[]");
+      FreeStyleProject project = r.createFreeStyleProject();
+      project.addProperty(new ParametersDefinitionProperty(emptyAllowed(stub.url("/empty"), ".*")));
+
+      JenkinsRule.WebClient wc = r.createWebClient();
+      wc.setThrowExceptionOnFailingStatusCode(false);
+      HtmlPage page = wc.getPage(project, "build?delay=0sec");
+      assertFalse(page.asNormalizedText().contains("yielded no results"), page.asNormalizedText());
+      r.submit(page.getFormByName("parameters"));
+      r.waitUntilNoActivity();
+
+      FreeStyleBuild build = project.getLastBuild();
+      assertNotNull(build, "build was not scheduled");
+      r.assertBuildStatusSuccess(build);
+      assertEquals("", build.getAction(ParametersAction.class).getParameter("p").getValue());
+    }
+  }
+
+  private static RestListParameterDefinition emptyAllowed(final String endpoint, final String filter) {
+    RestListParameterDefinition def = new RestListParameterDefinition(
+      "p", "d", endpoint, "", MimeType.APPLICATION_JSON, "$.*", "$",
+      ValueOrder.NONE, filter, 0, "", false);
+    def.setAllowEmptyValue(true);
+    def.getValues();
+    return def;
+  }
+
   // Endpoint check (configuration-validation)
 
   @Test
