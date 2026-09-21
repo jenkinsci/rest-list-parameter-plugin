@@ -253,7 +253,9 @@ public final class RestListParameterDefinition extends SimpleParameterDefinition
       getValueOrder(),
       CustomHeader.resolveAll(getCustomHeaders(), context));
 
-    setErrorMsg(container.getErrorMsg().orElse(""));
+    // An empty list is a valid response when an empty value may be submitted (#209)
+    boolean expectedEmpty = allowEmptyValue && container.isNoValues();
+    setErrorMsg(expectedEmpty ? "" : container.getErrorMsg().orElse(""));
     values = container.getValue();
     return values;
   }

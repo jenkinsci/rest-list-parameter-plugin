@@ -66,7 +66,7 @@ public class ValueResolver {
       else {
         log.warning(Messages.RLP_ValueResolver_warn_xPath_NoValues());
         log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_xPath_NoValues(), expression, xmlStr));
-        container.setErrorMsg(Messages.RLP_ValueResolver_warn_xPath_NoValues());
+        container.setNoValues(Messages.RLP_ValueResolver_warn_xPath_NoValues());
       }
     }
     catch (XPathExpressionException | IllegalArgumentException ignore) {
@@ -152,13 +152,13 @@ public class ValueResolver {
       else {
         log.warning(Messages.RLP_ValueResolver_warn_jPath_NoValues());
         log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues(), expression, jsonStr));
-        container.setErrorMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues());
+        container.setNoValues(Messages.RLP_ValueResolver_warn_jPath_NoValues());
       }
     }
     catch (PathNotFoundException ignored) {
       log.warning(Messages.RLP_ValueResolver_warn_jPath_NoValues());
       log.fine(buildFineLogMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues(), expression, jsonStr));
-      container.setErrorMsg(Messages.RLP_ValueResolver_warn_jPath_NoValues());
+      container.setNoValues(Messages.RLP_ValueResolver_warn_jPath_NoValues());
     }
     catch (InvalidPathException ignored) {
       log.warning(Messages.RLP_ValueResolver_warn_jPath_ExpressionErr());

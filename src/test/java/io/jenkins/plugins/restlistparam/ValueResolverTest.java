@@ -89,6 +89,7 @@ class ValueResolverTest {
     ResultContainer<List<ValueItem>> res = ValueResolver.resolveJsonPath("[]", "$.*", "$");
     assertNotNull(res);
     assertTrue(res.getErrorMsg().isPresent());
+    assertTrue(res.isNoValues());
     assertEquals(0, res.getValue().size());
     assertArrayEquals(new String[]{}, res.getValue().stream().map(ValueItem::getValue).toArray());
   }
@@ -98,6 +99,7 @@ class ValueResolverTest {
     ResultContainer<List<ValueItem>> res = ValueResolver.resolveJsonPath(TestConst.validTestJson, "$.", "$");
     assertNotNull(res);
     assertTrue(res.getErrorMsg().isPresent());
+    assertFalse(res.isNoValues());
     assertEquals(0, res.getValue().size());
     assertArrayEquals(new String[]{}, res.getValue().stream().map(ValueItem::getValue).toArray());
   }
@@ -107,6 +109,7 @@ class ValueResolverTest {
     ResultContainer<List<ValueItem>> res = ValueResolver.resolveJsonPath(TestConst.validTestJson, "$.name", "$");
     assertNotNull(res);
     assertTrue(res.getErrorMsg().isPresent());
+    assertTrue(res.isNoValues());
     assertEquals(0, res.getValue().size());
     assertArrayEquals(new String[]{}, res.getValue().stream().map(ValueItem::getValue).toArray());
   }
@@ -116,6 +119,7 @@ class ValueResolverTest {
     ResultContainer<List<ValueItem>> res = ValueResolver.resolveJsonPath(TestConst.invalidTestJson, "$.*.name", "$");
     assertNotNull(res);
     assertTrue(res.getErrorMsg().isPresent());
+    assertFalse(res.isNoValues());
     assertEquals(0, res.getValue().size());
     assertArrayEquals(new String[]{}, res.getValue().stream().map(ValueItem::getValue).toArray());
   }
@@ -243,6 +247,7 @@ class ValueResolverTest {
     ResultContainer<List<ValueItem>> res = ValueResolver.resolveXPath(TestConst.validTestXml, "//row_name", "/");
     assertNotNull(res);
     assertTrue(res.getErrorMsg().isPresent());
+    assertTrue(res.isNoValues());
     assertEquals(0, res.getValue().size());
     assertArrayEquals(new String[]{}, res.getValue().stream().map(ValueItem::getValue).toArray());
   }
@@ -252,6 +257,7 @@ class ValueResolverTest {
     ResultContainer<List<ValueItem>> res = ValueResolver.resolveXPath(TestConst.validTestXml, "\\row_name", "/");
     assertNotNull(res);
     assertTrue(res.getErrorMsg().isPresent());
+    assertFalse(res.isNoValues());
     assertEquals(0, res.getValue().size());
     assertArrayEquals(new String[]{}, res.getValue().stream().map(ValueItem::getValue).toArray());
   }
@@ -261,6 +267,7 @@ class ValueResolverTest {
     ResultContainer<List<ValueItem>> res = ValueResolver.resolveXPath(TestConst.invalidTestXml, "//row/name", "/");
     assertNotNull(res);
     assertTrue(res.getErrorMsg().isPresent());
+    assertFalse(res.isNoValues());
     assertEquals(0, res.getValue().size());
     assertArrayEquals(new String[]{}, res.getValue().stream().map(ValueItem::getValue).toArray());
   }
