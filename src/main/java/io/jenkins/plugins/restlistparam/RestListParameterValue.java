@@ -16,7 +16,6 @@ import java.util.Locale;
  * {@link ParameterValue} created from {@link RestListParameterDefinition}.
  */
 public final class RestListParameterValue extends ParameterValue {
-  @Exported(visibility = 4)
   @Restricted(NoExternalUse.class)
   private final String value;
 
@@ -52,6 +51,7 @@ public final class RestListParameterValue extends ParameterValue {
   }
 
   @Override
+  @Exported(visibility = 4)
   public String getValue() {
     return value;
   }

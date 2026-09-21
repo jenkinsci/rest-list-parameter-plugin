@@ -3,7 +3,9 @@ package io.jenkins.plugins.restlistparam;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.jayway.jsonpath.JsonPath;
+import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
+import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
@@ -107,6 +109,92 @@ class ValueResolutionJenkinsTest {
         .anyMatch(node -> prefill.equals(((DomElement) node).getAttribute("value")));
       assertTrue(matchesSuggestion, "prefill should be the value the dropdown would submit");
       assertEquals(1, stub.requestCount("/tags"), "the form should fetch once per render");
+    }
+  }
+
+  // Remote access API (#174)
+
+  @Test
+  void remoteApiExportsParameterValue(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/list", "[\"v1\", \"v2\"]");
+      RestListParameterDefinition def = new RestListParameterDefinition(
+        "p", "d", stub.url("/list"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 0, "", false);
+      FreeStyleProject project = r.createFreeStyleProject();
+      project.addProperty(new ParametersDefinitionProperty(def));
+      FreeStyleBuild build = r.assertBuildStatusSuccess(project.scheduleBuild2(0,
+        new ParametersAction(new RestListParameterValue("p", "v2", "d"))));
+
+      String json = r.createWebClient()
+        .goTo(build.getUrl() + "api/json?tree=actions[parameters[name,value]]", "application/json")
+        .getWebResponse().getContentAsString();
+
+      assertTrue(json.contains("\"name\":\"p\",\"value\":\"v2\""), json);
+    }
+  }
+
+  // Build form structure (#204)
+
+  /**
+   * Active Choices resolves a referenced parameter by walking the children of
+   * {@code div[name=parameter]} and taking the first input not named {@code name}.
+   */
+  @Test
+  void valueElementFollowsNameInBuildForm(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/list", "[\"v1\", \"v2\"]");
+      for (boolean validation : List.of(true, false)) {
+        RestListParameterDefinition def = new RestListParameterDefinition(
+          "p", "some description", stub.url("/list"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+          ValueOrder.NONE, ".*", 0, "", false);
+        def.setEnableValidation(validation);
+        FreeStyleProject project = r.createFreeStyleProject();
+        project.addProperty(new ParametersDefinitionProperty(def));
+
+        JenkinsRule.WebClient wc = r.createWebClient();
+        wc.getOptions().setJavaScriptEnabled(false);
+        wc.setThrowExceptionOnFailingStatusCode(false);
+        HtmlPage page = wc.getPage(project, "build?delay=0sec");
+
+        DomElement parameter = page.querySelector("div[name=parameter]");
+        assertNotNull(parameter);
+        DomElement firstValueCandidate = null;
+        for (DomElement child : parameter.getChildElements()) {
+          String name = child.getAttribute("name");
+          if (!name.isEmpty() && !"name".equals(name)) {
+            firstValueCandidate = child;
+            break;
+          }
+        }
+        assertNotNull(firstValueCandidate, "no value element in parameter div");
+        assertEquals("value", firstValueCandidate.getAttribute("name"), "validation=" + validation);
+      }
+    }
+  }
+
+  @Test
+  void submittedValueCarriesDefinitionDescription(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/list", "[\"v1\", \"v2\"]");
+      RestListParameterDefinition def = new RestListParameterDefinition(
+        "p", "some description", stub.url("/list"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 0, "v2", false);
+      FreeStyleProject project = r.createFreeStyleProject();
+      project.addProperty(new ParametersDefinitionProperty(def));
+
+      JenkinsRule.WebClient wc = r.createWebClient();
+      wc.setThrowExceptionOnFailingStatusCode(false);
+      HtmlPage page = wc.getPage(project, "build?delay=0sec");
+      r.submit(page.getFormByName("parameters"));
+      r.waitUntilNoActivity();
+
+      FreeStyleBuild build = project.getLastBuild();
+      assertNotNull(build, "build was not scheduled");
+      RestListParameterValue value = (RestListParameterValue)
+        build.getAction(ParametersAction.class).getParameter("p");
+      assertEquals("v2", value.getValue());
+      assertEquals("some description", value.getDescription());
     }
   }
 

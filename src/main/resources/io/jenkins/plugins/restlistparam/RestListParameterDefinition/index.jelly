@@ -19,7 +19,6 @@
     <!-- this div is required because of ParametersDefinitionProperty.java#117 -->
     <div name="parameter" description="${it.description}">
       <input type="hidden" name="name" value="${it.name}"/>
-      <input type="hidden" name="description" value="${it.description}"/>
 
       <j:choose>
         <j:when test="${!it.enableValidation}">
