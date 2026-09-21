@@ -1,0 +1,46 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions class="java.util.Arrays$ArrayList">
+        <a class="hudson.model.ParameterDefinition-array">
+          <io.jenkins.plugins.restlistparam.RestListParameterDefinition>
+            <name>VERSION</name>
+            <description>pick a version</description>
+            <restEndpoint>https://example.invalid/api/tags</restEndpoint>
+            <credentialId>api-token</credentialId>
+            <mimeType>APPLICATION_JSON</mimeType>
+            <valueExpression>$.*</valueExpression>
+            <displayExpression>$.name</displayExpression>
+            <valueOrder>DSC</valueOrder>
+            <defaultValue>v1.2</defaultValue>
+            <filter>v.*</filter>
+            <cacheTime>15</cacheTime>
+            <allowEmptyValue>true</allowEmptyValue>
+            <enableValidation>false</enableValidation>
+            <errorMsg></errorMsg>
+            <values class="empty-list"/>
+            <customHeaders>
+              <io.jenkins.plugins.restlistparam.model.CustomHeader>
+                <name>X-Auth-Token</name>
+                <credentialId>header-token</credentialId>
+                <valuePrefix>Token </valuePrefix>
+              </io.jenkins.plugins.restlistparam.model.CustomHeader>
+            </customHeaders>
+          </io.jenkins.plugins.restlistparam.RestListParameterDefinition>
+        </a>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders/>
+  <publishers/>
+  <buildWrappers/>
+</project>

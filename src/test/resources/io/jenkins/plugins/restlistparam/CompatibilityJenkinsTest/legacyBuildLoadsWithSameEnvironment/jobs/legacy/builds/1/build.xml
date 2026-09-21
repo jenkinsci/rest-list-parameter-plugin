@@ -1,0 +1,32 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<build>
+  <actions>
+    <hudson.model.ParametersAction>
+      <safeParameters class="sorted-set"/>
+      <parameters>
+        <io.jenkins.plugins.restlistparam.RestListParameterValue>
+          <name>VERSION</name>
+          <description>pick a version</description>
+          <value>{&quot;name&quot;:&quot;v1.2&quot;}</value>
+        </io.jenkins.plugins.restlistparam.RestListParameterValue>
+      </parameters>
+      <parameterDefinitionNames>
+        <string>VERSION</string>
+      </parameterDefinitionNames>
+    </hudson.model.ParametersAction>
+  </actions>
+  <queueId>1</queueId>
+  <timestamp>1790023156288</timestamp>
+  <startTime>1790023156300</startTime>
+  <result>SUCCESS</result>
+  <duration>223</duration>
+  <charset>UTF-8</charset>
+  <keepLog>false</keepLog>
+  <builtOn></builtOn>
+  <workspace>/var/jenkins_home/workspace/legacy</workspace>
+  <hudsonVersion>2.479.1</hudsonVersion>
+  <scm class="hudson.scm.NullChangeLogParser"/>
+  <culprits class="java.util.Collections$UnmodifiableSet">
+    <c class="sorted-set"/>
+  </culprits>
+</build>

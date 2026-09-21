@@ -116,6 +116,17 @@
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>json-path-api</artifactId>
     </dependency>
+    <!--
+      json-smart ships inside json-path-api (json-path declares it with runtime scope), so it is on the
+      plugin's classpath at runtime; this only makes it visible to the compiler (MultiValueCodec) without
+      bundling a second copy. Keep the version in line with the one json-path depends on.
+    -->
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.5.0</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>io.jenkins.plugins</groupId>
       <artifactId>select2-api</artifactId>
@@ -148,6 +159,11 @@
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-durable-task-step</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>pipeline-build-step</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

@@ -1,0 +1,82 @@
+<!-- this is the page fragment displayed to set up a job -->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.testConfigHeaders"/>
+
+  <f:entry title="${%parameter.name}" field="name">
+    <f:textbox default="REST_VALUE" />
+  </f:entry>
+
+  <f:entry title="${%parameter.restEndpoint}" field="restEndpoint">
+    <f:textbox default="" checkMethod="post" />
+  </f:entry>
+
+  <f:entry title="${%parameter.credentialId}" field="credentialId">
+    <c:select default="${descriptor.getDefaultCredentialID()}" style="min-width: 18rem;" />
+  </f:entry>
+
+  <f:entry title="${%parameter.mimeTape}" field="mimeType">
+    <f:enum>${it}</f:enum>
+  </f:entry>
+
+  <f:entry title="${%parameter.valueExpression}" field="valueExpression">
+    <f:textbox default="" checkMethod="post" />
+  </f:entry>
+
+  <!-- Some advances options -->
+  <f:advanced>
+    <f:section title="${%parameter.advanced}" >
+      <f:entry title="${%parameter.displayExpression}" field="displayExpression">
+        <f:textbox default="" checkMethod="post" />
+      </f:entry>
+
+      <f:entry title="${%parameter.cacheTime}" field="cacheTime">
+        <f:number default="${descriptor.getDefaultCacheTime()}" checkMethod="post"/>
+      </f:entry>
+
+      <f:entry title="${%parameter.valueFilterPattern}" field="filter">
+        <f:textbox default=".*" />
+      </f:entry>
+
+      <f:entry title="${%parameter.applySortOrder}" field="valueOrder">
+        <f:enum>${it}</f:enum>
+      </f:entry>
+
+      <f:entry title="${%parameter.defaultValue}" field="defaultValue">
+        <f:textbox default="" />
+      </f:entry>
+
+      <f:entry title="${%parameter.allowEmptyValue}" field="allowEmptyValue">
+        <f:checkbox />
+      </f:entry>
+
+      <f:entry title="${%parameter.enableValidation}" field="enableValidation">
+        <f:checkbox default="true" />
+      </f:entry>
+
+      <f:entry title="${%parameter.customHeaders}" field="customHeaders">
+        <div class="rlp-custom-headers">
+          <f:repeatableProperty field="customHeaders" add="${%parameter.customHeaders.add}" />
+        </div>
+      </f:entry>
+    </f:section>
+  </f:advanced>
+
+  <!-- filled from the header rows by testConfigHeaders.js only while Test Configuration reads its fields -->
+  <input type="hidden" name="_.customHeadersJson" value=""/>
+  <f:validateButton
+      title="${%parameter.testConfig}"
+      progress="${%parameter.testing}"
+      method="testConfiguration"
+      with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder,customHeadersJson"
+  />
+
+  <f:entry title="${%parameter.description}" field="description">
+    <f:textarea
+      codemirror-mode="${app.markupFormatter.codeMirrorMode}"
+      codemirror-config="${app.markupFormatter.codeMirrorConfig}"
+      previewEndpoint="/markupFormatter/previewDescription"
+    />
+  </f:entry>
+
+</j:jelly>

@@ -1,0 +1,15 @@
+<div>
+  The <i>Default Value</i> predetermines which entries are selected when the build form opens.
+  It refers to entries by their <b>display value</b>.
+  <ul>
+    <li>Several entries: a JSON array of strings, e.g. <code>["Alpha","Gamma"]</code></li>
+    <li>A single entry: its display value as plain text, e.g. <code>Beta</code></li>
+    <li>No default: leave it empty (or <code>[]</code>)</li>
+  </ul>
+  Text is never split on commas: <code>a,b</code> refers to one entry displayed as <code>a,b</code>.
+  A display value that is itself a JSON array of strings must be wrapped in an array, e.g. <code>["[\"x\"]"]</code>.
+  <p>
+    With <i>Enable Value Validation</i> checked, default values that match no entry are ignored. With it
+    unchecked, they are preselected as free-form entries, submitted as typed.
+  </p>
+</div>
