@@ -1,6 +1,7 @@
 package io.jenkins.plugins.restlistparam.util;
 
 import hudson.FilePath;
+import hudson.init.Terminator;
 import io.jenkins.plugins.restlistparam.Messages;
 import io.jenkins.plugins.restlistparam.RestListParameterGlobalConfig;
 import jenkins.model.Jenkins;
@@ -9,10 +10,13 @@ import okhttp3.CacheControl;
 import okhttp3.OkHttpClient;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -32,6 +36,8 @@ public class OkHttpUtils {
   /** The cache directory and size {@link #sharedClient} was built for; {@code null} when it has no cache. */
   private static File sharedCacheDir;
   private static long sharedCacheSize;
+  /** Caches replaced after a cache size change, still open for requests that were using them. */
+  private static final List<Cache> retiredCaches = new ArrayList<>();
 
   private OkHttpUtils() {
     throw new IllegalStateException("Utility class");
@@ -80,7 +86,14 @@ public class OkHttpUtils {
           File cacheDir = getCacheDir(jenkins);
           if (sharedClient == null || !cacheDir.equals(sharedCacheDir) || cacheSize != sharedCacheSize) {
             log.fine(Messages.PLP_OkHttpUtils_fine_CacheCreationSuccess(cacheSize / MEBIBYTE));
-            // The previous cache is not closed: requests still running may be using it.
+            if (sharedCacheDir != null && sharedCacheDir.equals(cacheDir)) {
+              // requests still running may be using the previous cache; it is closed when Jenkins stops
+              retiredCaches.add(sharedClient.cache());
+            }
+            else {
+              // another Jenkins home: nothing uses the previous caches any more
+              closeCaches();
+            }
             sharedClient = newBuilder().cache(new Cache(cacheDir, cacheSize)).build();
             sharedCacheDir = cacheDir;
             sharedCacheSize = cacheSize;
@@ -97,11 +110,41 @@ public class OkHttpUtils {
 
       // no cache; the next call tries again to create one
       if (sharedClient == null || sharedCacheDir != null) {
+        closeCaches();
         sharedClient = newBuilder().build();
         sharedCacheDir = null;
       }
       return sharedClient;
     }
+  }
+
+  /**
+   * Closes the response cache when Jenkins stops, so no file in the Jenkins home stays open (Windows cannot delete
+   * open files). The next request after a restart opens the cache again.
+   */
+  @Terminator
+  public static void closeSharedClient() {
+    synchronized (lock) {
+      closeCaches();
+      sharedClient = null;
+      sharedCacheDir = null;
+    }
+  }
+
+  /** Closes the shared client's cache and the retired ones; the caller holds {@link #lock}. */
+  private static void closeCaches() {
+    if (sharedClient != null && sharedClient.cache() != null) {
+      retiredCaches.add(sharedClient.cache());
+    }
+    for (Cache cache : retiredCaches) {
+      try {
+        cache.close();
+      }
+      catch (IOException ex) {
+        log.fine("Closing the response cache failed with: " + ex.getClass().getName());
+      }
+    }
+    retiredCaches.clear();
   }
 
   private static OkHttpClient.Builder newBuilder() {

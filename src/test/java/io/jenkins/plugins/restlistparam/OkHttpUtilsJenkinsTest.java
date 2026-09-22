@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WithJenkins
 class OkHttpUtilsJenkinsTest {
@@ -60,5 +61,20 @@ class OkHttpUtilsJenkinsTest {
     assertNotNull(after);
     assertNotSame(before, after);
     assertEquals(51L * 1024 * 1024, after.maxSize());
+  }
+
+  @Test
+  void stoppingJenkinsClosesTheCache(JenkinsRule r) {
+    Cache before = OkHttpUtils.getClientWithProxyAndCache("http://127.0.0.1/").cache();
+    RestListParameterGlobalConfig.get().setCacheSize(RestListParameterGlobalConfig.get().getCacheSize() + 1);
+    Cache resized = OkHttpUtils.getClientWithProxyAndCache("http://127.0.0.1/").cache();
+
+    OkHttpUtils.closeSharedClient();
+
+    assertTrue(before.isClosed(), "the cache replaced after a size change is closed too");
+    assertTrue(resized.isClosed());
+    Cache reopened = OkHttpUtils.getClientWithProxyAndCache("http://127.0.0.1/").cache();
+    assertNotNull(reopened);
+    assertFalse(reopened.isClosed());
   }
 }
