@@ -90,6 +90,14 @@ public final class RestListParameterDefinition extends AbstractRestListParameter
       .orElse(fallback);
   }
 
+  /**
+   * In dropdown mode, the entry displayed as the default value is preselected.
+   */
+  @Override
+  public boolean isDefaultSelected(final ValueItem item) {
+    return item != null && item.getDisplayValue() != null && item.getDisplayValue().equals(getDefaultValue());
+  }
+
   @Override
   public ParameterDefinition copyWithDefaultValue(final ParameterValue defaultValue) {
     if (defaultValue instanceof RestListParameterValue) {
@@ -98,7 +106,7 @@ public final class RestListParameterDefinition extends AbstractRestListParameter
         getName(), getDescription(), getRestEndpoint(), getCredentialId(), getMimeType(),
         getValueExpression(), getDisplayExpression(), getValueOrder(), getFilter(), getCacheTime(),
         ValueResolver.parseDisplayValue(getMimeType(), value.getValue(), getDisplayExpression()),
-        isAllowEmptyValue(), isEnableValidation(), getValues(), getCustomHeaders());
+        isAllowEmptyValue(), isEnableValidation(), Collections.emptyList(), getCustomHeaders());
     }
     else {
       return this;
@@ -145,10 +153,8 @@ public final class RestListParameterDefinition extends AbstractRestListParameter
     if (!isEnableValidation()) {
       return true;
     }
-    return getValues().stream()
-      .map(ValueItem::getValue)
-      .filter(Objects::nonNull)
-      .anyMatch(submitted::equals);
+    String element = submitted.toString();
+    return entryValuesFor(List.of(element)).contains(element);
   }
 
   @Override

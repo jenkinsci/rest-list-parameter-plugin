@@ -9,15 +9,20 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
@@ -26,15 +31,20 @@ import java.util.stream.Collectors;
  * <p>
  * A request is answered by the response registered for its exact path and raw query string
  * ({@code /api?page=2}), falling back to the one registered for its path alone ({@code /api}).
+ * Requests are handled concurrently, so a delayed response does not hold up requests to other paths.
  */
 public class StubHttpServer implements AutoCloseable {
   private final HttpServer server;
   private final Map<String, Response> responses = new ConcurrentHashMap<>();
+  private final Map<String, Duration> delays = new ConcurrentHashMap<>();
+  private final Map<String, Queue<Response>> onceResponses = new ConcurrentHashMap<>();
   private final List<RecordedRequest> requests = Collections.synchronizedList(new ArrayList<>());
+  private final ExecutorService executor = Executors.newCachedThreadPool();
 
   public StubHttpServer() throws IOException {
     server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext("/", this::handle);
+    server.setExecutor(executor);
     server.start();
   }
 
@@ -44,6 +54,15 @@ public class StubHttpServer implements AutoCloseable {
    */
   public StubHttpServer respond(final String path, final int status, final String contentType, final String body) {
     responses.put(path, new Response(status, contentType, body));
+    return this;
+  }
+
+  /**
+   * Answers the next request to {@code path} (matched like {@link #respond}) with this response, before falling back
+   * to the one registered with {@link #respond}. Several calls queue several one-time responses in order.
+   */
+  public StubHttpServer respondOnce(final String path, final int status, final String contentType, final String body) {
+    onceResponses.computeIfAbsent(path, key -> new ConcurrentLinkedQueue<>()).add(new Response(status, contentType, body));
     return this;
   }
 
@@ -58,6 +77,15 @@ public class StubHttpServer implements AutoCloseable {
       throw new IllegalStateException("No response registered for " + path);
     }
     response.headers.add(new String[]{name, value});
+    return this;
+  }
+
+  /**
+   * Waits {@code delay} before answering requests to {@code path} (matched like responses: exact path plus
+   * query string first, then the path alone). The request is recorded when it arrives, before the delay.
+   */
+  public StubHttpServer withDelay(final String path, final Duration delay) {
+    delays.put(path, delay);
     return this;
   }
 
@@ -97,7 +125,26 @@ public class StubHttpServer implements AutoCloseable {
     String uri = requestUri.getRawQuery() != null ? path + "?" + requestUri.getRawQuery() : path;
     requests.add(new RecordedRequest(path, uri, exchange.getRequestHeaders()));
 
-    Response response = responses.get(uri);
+    Duration delay = delays.containsKey(uri) ? delays.get(uri) : delays.get(path);
+    if (delay != null) {
+      try {
+        Thread.sleep(delay.toMillis());
+      }
+      catch (InterruptedException e) {
+        // the server is closing
+        Thread.currentThread().interrupt();
+        exchange.close();
+        return;
+      }
+    }
+
+    Response response = pollOnce(uri);
+    if (response == null) {
+      response = pollOnce(path);
+    }
+    if (response == null) {
+      response = responses.get(uri);
+    }
     if (response == null) {
       response = responses.getOrDefault(path, new Response(404, "text/plain", "not found"));
     }
@@ -118,9 +165,15 @@ public class StubHttpServer implements AutoCloseable {
     }
   }
 
+  private Response pollOnce(final String key) {
+    Queue<Response> queue = onceResponses.get(key);
+    return queue != null ? queue.poll() : null;
+  }
+
   @Override
   public void close() {
     server.stop(0);
+    executor.shutdownNow();
   }
 
   private static final class Response {
@@ -163,6 +216,11 @@ public class StubHttpServer implements AutoCloseable {
 
     public boolean hasHeader(final String name) {
       return headers.containsKey(name);
+    }
+
+    /** The request's {@code Cache-Control} header, or {@code null} when it did not carry one. */
+    public String cacheControl() {
+      return header("Cache-Control");
     }
   }
 }

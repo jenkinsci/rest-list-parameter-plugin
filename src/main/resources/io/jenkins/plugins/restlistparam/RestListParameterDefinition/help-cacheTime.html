@@ -1,6 +1,13 @@
 <div>
-  Allows the user to cache values returned from a HTTP endpoint.<br/>
-  The unit of this value is <strong>MINUTES</strong>. If the value is set to <strong><em>0</em></strong>, a web request is forced.<br/>
-  <strong>NOTE:</strong> The cache can globally hold up to 50 MiB per default, which <em>should</em> be enough for most use-cases.<br/>
-  (The maximum size of the cache can be adjusted in the global Jenkins settings)
+  Keeps the values of a successful fetch for this many <strong>MINUTES</strong>: all pages, after the expressions,
+  the filter and the order. The build form, the check of a submitted value and Rebuild use them instead of contacting
+  the endpoint again, whatever caching headers the endpoint sends. If the value is set to <strong><em>0</em></strong>,
+  nothing is kept and every request contacts the endpoint.<br/>
+  A submitted value that is not among the cached values is checked against a new fetch, so newly published values are
+  accepted. Failed fetches are not cached.<br/>
+  The refresh button next to the parameter on the build form fetches the values again, bypassing the cache, and
+  administrators can clear all cached values in the global Jenkins settings. Changing this parameter's value source
+  (endpoint, credentials, expressions, filter, order, headers or pagination) also stops earlier values from being used.<br/>
+  <strong>NOTE:</strong> Below this cache, endpoint responses are also kept in an HTTP response cache on disk (50 MiB
+  per default, adjustable in the global Jenkins settings) as long as the endpoint's caching headers allow it.
 </div>

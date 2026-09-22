@@ -1,6 +1,7 @@
 package io.jenkins.plugins.restlistparam.util;
 
 import hudson.FilePath;
+import hudson.init.Terminator;
 import io.jenkins.plugins.restlistparam.Messages;
 import io.jenkins.plugins.restlistparam.RestListParameterGlobalConfig;
 import jenkins.model.Jenkins;
@@ -9,18 +10,34 @@ import okhttp3.CacheControl;
 import okhttp3.OkHttpClient;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class OkHttpUtils {
   private static final Logger log = Logger.getLogger(OkHttpUtils.class.getName());
-  private static final Jenkins jenkins = Jenkins.getInstanceOrNull();
   private static final String PARAMETERS = "parameters";
   private static final String PARAMETER_ID = "restListParam";
   private static final long MEBIBYTE = 1024L * 1024L;
+
+  private static final Object lock = new Object();
+  /**
+   * The client every request is derived from. OkHttp does not support several {@link Cache} instances on one
+   * directory, so all requests share this client's cache (and connection pool).
+   */
+  private static OkHttpClient sharedClient;
+  /** The cache directory and size {@link #sharedClient} was built for; {@code null} when it has no cache. */
+  private static File sharedCacheDir;
+  private static long sharedCacheSize;
+  /** Caches replaced after a cache size change, still open for requests that were using them. */
+  private static final List<Cache> retiredCaches = new ArrayList<>();
 
   private OkHttpUtils() {
     throw new IllegalStateException("Utility class");
@@ -29,46 +46,129 @@ public class OkHttpUtils {
   /**
    * Builds a OkHTTP client that respects any proxy set in the Jenkins 'Plugin Manager' and offers a response cache.
    * A proxy will only be applied if the host of the {@code httpEndpoint} is NOT part of the noProxy values.
-   * The response cache is only present if the creation on disk is possible, otherwise there is none
+   * The response cache is only present if the creation on disk is possible, otherwise there is none.
+   * <p>
+   * The client has no connect, read or write timeout; callers bound a request with a call timeout
+   * (see {@link #getClient(String, Duration)}).
    *
    * @param httpEndpoint the host of the endpoint will get looked up against the noProxy values
    * @return OkHttpClient setup with an appropriate httpProxy value and response cache
    */
   public static OkHttpClient getClientWithProxyAndCache(final String httpEndpoint) {
-    try {
-      if (jenkins != null) {
-        final RestListParameterGlobalConfig config = RestListParameterGlobalConfig.get();
-        FilePath parameterUserContent = jenkins.getRootPath()
-                                               .child(PARAMETERS)
-                                               .child(PARAMETER_ID);
-
-        if (!parameterUserContent.exists() && !parameterUserContent.isDirectory()) {
-          parameterUserContent.mkdirs();
-        }
-
-        File cacheDir = new File(parameterUserContent.toURI().getPath(), "okhttp_cache");
-        log.fine(Messages.PLP_OkHttpUtils_fine_CacheCreationSuccess(config.getCacheSize()));
-        return new OkHttpClient.Builder()
-          .cache(new Cache(cacheDir, config.getCacheSize() * MEBIBYTE))
-          .proxy(getProxy(httpEndpoint))
-          .build();
-      }
-      else {
-        log.fine(Messages.PLP_OkHttpUtils_fine_NoJenkinsInstance());
-      }
-    }
-    catch (Exception ex) {
-      log.warning(Messages.PLP_OkHttpUtils_warn_CacheIOException());
-      log.fine("Cache creation failed with: " + ex.getClass().getName() + '\n'
-                 + "EX Message: " + ex.getMessage());
-    }
-
-    return new OkHttpClient.Builder()
+    return getSharedClient().newBuilder()
       .proxy(getProxy(httpEndpoint))
       .build();
   }
 
+  /**
+   * Like {@link #getClientWithProxyAndCache(String)}, with a call timeout that covers the whole request:
+   * DNS, connecting, sending the request and reading the response body.
+   *
+   * @param httpEndpoint the host of the endpoint will get looked up against the noProxy values
+   * @param callTimeout  how long the call may take; must be positive
+   */
+  public static OkHttpClient getClient(final String httpEndpoint, final Duration callTimeout) {
+    return getSharedClient().newBuilder()
+      .proxy(getProxy(httpEndpoint))
+      .callTimeout(callTimeout)
+      .build();
+  }
+
+  /**
+   * @return The shared client, rebuilt when the configured cache size or the Jenkins home changed
+   */
+  private static OkHttpClient getSharedClient() {
+    Jenkins jenkins = Jenkins.getInstanceOrNull();
+    synchronized (lock) {
+      try {
+        if (jenkins != null) {
+          long cacheSize = RestListParameterGlobalConfig.get().getCacheSize() * MEBIBYTE;
+          File cacheDir = getCacheDir(jenkins);
+          if (sharedClient == null || !cacheDir.equals(sharedCacheDir) || cacheSize != sharedCacheSize) {
+            log.fine(Messages.PLP_OkHttpUtils_fine_CacheCreationSuccess(cacheSize / MEBIBYTE));
+            if (sharedCacheDir != null && sharedCacheDir.equals(cacheDir)) {
+              // requests still running may be using the previous cache; it is closed when Jenkins stops
+              retiredCaches.add(sharedClient.cache());
+            }
+            else {
+              // another Jenkins home: nothing uses the previous caches any more
+              closeCaches();
+            }
+            sharedClient = newBuilder().cache(new Cache(cacheDir, cacheSize)).build();
+            sharedCacheDir = cacheDir;
+            sharedCacheSize = cacheSize;
+          }
+          return sharedClient;
+        }
+        log.fine(Messages.PLP_OkHttpUtils_fine_NoJenkinsInstance());
+      }
+      catch (Exception ex) {
+        log.warning(Messages.PLP_OkHttpUtils_warn_CacheIOException());
+        log.fine("Cache creation failed with: " + ex.getClass().getName() + '\n'
+                   + "EX Message: " + ex.getMessage());
+      }
+
+      // no cache; the next call tries again to create one
+      if (sharedClient == null || sharedCacheDir != null) {
+        closeCaches();
+        sharedClient = newBuilder().build();
+        sharedCacheDir = null;
+      }
+      return sharedClient;
+    }
+  }
+
+  /**
+   * Closes the response cache when Jenkins stops, so no file in the Jenkins home stays open (Windows cannot delete
+   * open files). The next request after a restart opens the cache again.
+   */
+  @Terminator
+  public static void closeSharedClient() {
+    synchronized (lock) {
+      closeCaches();
+      sharedClient = null;
+      sharedCacheDir = null;
+    }
+  }
+
+  /** Closes the shared client's cache and the retired ones; the caller holds {@link #lock}. */
+  private static void closeCaches() {
+    if (sharedClient != null && sharedClient.cache() != null) {
+      retiredCaches.add(sharedClient.cache());
+    }
+    for (Cache cache : retiredCaches) {
+      try {
+        cache.close();
+      }
+      catch (IOException ex) {
+        log.fine("Closing the response cache failed with: " + ex.getClass().getName());
+      }
+    }
+    retiredCaches.clear();
+  }
+
+  private static OkHttpClient.Builder newBuilder() {
+    // the call timeout of each request is the only limit
+    return new OkHttpClient.Builder()
+      .connectTimeout(0, TimeUnit.MILLISECONDS)
+      .readTimeout(0, TimeUnit.MILLISECONDS)
+      .writeTimeout(0, TimeUnit.MILLISECONDS);
+  }
+
+  private static File getCacheDir(final Jenkins jenkins) throws Exception {
+    FilePath parameterUserContent = jenkins.getRootPath()
+                                           .child(PARAMETERS)
+                                           .child(PARAMETER_ID);
+
+    if (!parameterUserContent.exists() && !parameterUserContent.isDirectory()) {
+      parameterUserContent.mkdirs();
+    }
+
+    return new File(Objects.requireNonNull(parameterUserContent.toURI().getPath()), "okhttp_cache");
+  }
+
   private static Proxy getProxy(final String httpEndpoint) {
+    Jenkins jenkins = Jenkins.getInstanceOrNull();
     if (jenkins == null || jenkins.proxy == null) {
       return Proxy.NO_PROXY;
     }

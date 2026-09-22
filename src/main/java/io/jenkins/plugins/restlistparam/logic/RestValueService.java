@@ -4,6 +4,8 @@ import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.restlistparam.Messages;
+import io.jenkins.plugins.restlistparam.model.FetchErrorDetails;
+import io.jenkins.plugins.restlistparam.model.FetchOptions;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.Pagination;
@@ -11,6 +13,7 @@ import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.HTTPHeaders;
 import io.jenkins.plugins.restlistparam.util.OkHttpUtils;
+import okhttp3.CacheControl;
 import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -20,8 +23,10 @@ import okhttp3.Response;
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -32,6 +37,8 @@ public class RestValueService {
 
   private static final String EX_CLASS = "Exception Class: ";
   private static final String EX_MESSAGE = "Exception Message: ";
+  /** An interrupted call this close to the deadline, or later, is reported as the fetch timeout. */
+  private static final long DEADLINE_TOLERANCE_NANOS = Duration.ofMillis(100).toNanos();
 
   private RestValueService() {
     throw new IllegalStateException("Static Logic class");
@@ -103,17 +110,87 @@ public class RestValueService {
                                                      final Map<String, String> customHeaders,
                                                      final Pagination pagination)
   {
-    ResultContainer<List<ValueItem>> valueList = getValuesFromAllPages(restEndpoint, credentials, mimeType, cacheTime,
+    return get(restEndpoint, credentials, mimeType, cacheTime, valueExpression, displayExpression, filter, order,
+      customHeaders, pagination, FetchOptions.defaults());
+  }
+
+  /**
+   * Like {@link #get(String, StandardCredentials, MimeType, Integer, String, String, String, ValueOrder, Map, Pagination)},
+   * with explicit {@link FetchOptions}.
+   * <p>
+   * The whole fetch, across all pages, is limited to the options' timeout. When it runs out, the entries of the pages
+   * already fetched are discarded and the error names the timeout. A forced fetch sends {@code Cache-Control: no-cache}
+   * with every page request, so the HTTP response cache is bypassed.
+   *
+   * @param options The time limit and whether the fetch is forced
+   * @return A {@link ResultContainer} with the values or a user friendly error message and, for a failed fetch, the
+   * request metadata of the failure
+   */
+  public static ResultContainer<List<ValueItem>> get(final String restEndpoint,
+                                                     final StandardCredentials credentials,
+                                                     final MimeType mimeType,
+                                                     final Integer cacheTime,
+                                                     final String valueExpression,
+                                                     final String displayExpression,
+                                                     final String filter,
+                                                     final ValueOrder order,
+                                                     final Map<String, String> customHeaders,
+                                                     final Pagination pagination,
+                                                     final FetchOptions options)
+  {
+    Fetch fetch = new Fetch(options, cacheTime);
+    ResultContainer<List<ValueItem>> valueList = getValuesFromAllPages(restEndpoint, credentials, mimeType, fetch,
       valueExpression, displayExpression, customHeaders, pagination);
 
     if (!valueList.getErrorMsg().isPresent() && isFilterOrOrderSet(filter, order)) {
       ResultContainer<List<ValueItem>> filtered = filterAndSortValues(valueList.getValue(), filter, order);
       filtered.setPagesFetched(valueList.getPagesFetched());
       filtered.setPageLimitReached(valueList.isPageLimitReached());
+      if (filtered.getErrorMsg().isPresent() && !filtered.isNoValues()) {
+        filtered.setErrorDetails(new FetchErrorDetails(restEndpoint, null, filtered.getErrorCause(),
+          fetch.elapsedMillis()));
+      }
       valueList = filtered;
     }
 
     return valueList;
+  }
+
+  /**
+   * The state of one fetch: its options, its start and its deadline.
+   */
+  private static final class Fetch {
+    private final FetchOptions options;
+    private final Integer cacheTime;
+    private final long start = System.nanoTime();
+    private final long deadline;
+
+    private Fetch(final FetchOptions options, final Integer cacheTime) {
+      this.options = options;
+      this.cacheTime = cacheTime;
+      this.deadline = start + Duration.ofSeconds(options.getTimeoutSeconds()).toNanos();
+    }
+
+    /** The time left until the deadline; zero or negative when it has passed. */
+    Duration remaining() {
+      return Duration.ofNanos(deadline - System.nanoTime());
+    }
+
+    boolean isDeadlineReached() {
+      return deadline - System.nanoTime() <= DEADLINE_TOLERANCE_NANOS;
+    }
+
+    long elapsedMillis() {
+      return Duration.ofNanos(System.nanoTime() - start).toMillis();
+    }
+
+    CacheControl cacheControl() {
+      return options.isForced() ? CacheControl.FORCE_NETWORK : OkHttpUtils.getCacheControl(cacheTime);
+    }
+
+    String timeoutMessage() {
+      return Messages.RLP_RestValueService_warn_Timeout(options.getTimeoutSeconds());
+    }
   }
 
   /**
@@ -125,7 +202,7 @@ public class RestValueService {
   private static ResultContainer<List<ValueItem>> getValuesFromAllPages(final String restEndpoint,
                                                                         final StandardCredentials credentials,
                                                                         final MimeType mimeType,
-                                                                        final Integer cacheTime,
+                                                                        final Fetch fetch,
                                                                         final String valueExpression,
                                                                         final String displayExpression,
                                                                         final Map<String, String> customHeaders,
@@ -147,10 +224,17 @@ public class RestValueService {
     int page = 1;
 
     while (true) {
-      ResultContainer<PageResponse> fetched = getPageFromRestEndpoint(url, credentials, mimeType, cacheTime,
+      if (fetch.isDeadlineReached()) {
+        return timedOut(container, fetch, url, page, null);
+      }
+      ResultContainer<PageResponse> fetched = getPageFromRestEndpoint(url, credentials, mimeType, fetch,
         customHeaders);
       if (fetched.getErrorMsg().isPresent()) {
+        if (fetched.isTimedOut()) {
+          return timedOut(container, fetch, url, page, fetched.getErrorCause());
+        }
         container.setErrorMsg(onPage(fetched.getErrorMsg().get(), page));
+        container.setErrorDetails(new FetchErrorDetails(url, page, fetched.getErrorCause(), fetch.elapsedMillis()));
         return container;
       }
       PageResponse response = fetched.getValue();
@@ -159,6 +243,7 @@ public class RestValueService {
         displayExpression));
       if (extractionError.isPresent()) {
         container.setErrorMsg(onPage(extractionError.get(), page));
+        container.setErrorDetails(new FetchErrorDetails(url, page, null, fetch.elapsedMillis()));
         return container;
       }
       container.setPagesFetched(page);
@@ -169,6 +254,7 @@ public class RestValueService {
       ResultContainer<HttpUrl> next = nextPage(pagination, restEndpoint, url, response, page, pages);
       if (next.getErrorMsg().isPresent()) {
         container.setErrorMsg(next.getErrorMsg().get());
+        container.setErrorDetails(new FetchErrorDetails(url, page, null, fetch.elapsedMillis()));
         return container;
       }
       container.setPageLimitReached(next.isPageLimitReached());
@@ -180,6 +266,25 @@ public class RestValueService {
     }
 
     return pages.toResult(container);
+  }
+
+  /**
+   * Ends a fetch that ran out of time: the entries of pages already fetched are discarded.
+   *
+   * @param cause The exception that ended the request, or {@code null} when the deadline passed between pages
+   */
+  private static ResultContainer<List<ValueItem>> timedOut(final ResultContainer<List<ValueItem>> container,
+                                                           final Fetch fetch,
+                                                           final String url,
+                                                           final int page,
+                                                           final String cause)
+  {
+    log.warning(fetch.timeoutMessage());
+    container.setValue(Collections.emptyList());
+    container.setErrorMsg(fetch.timeoutMessage());
+    container.setErrorDetails(new FetchErrorDetails(url, page, cause != null ? cause : "timeout",
+      fetch.elapsedMillis()));
+    return container;
   }
 
   /**
@@ -296,13 +401,14 @@ public class RestValueService {
                                                  final StandardCredentials credentials,
                                                  final MimeType mimeType)
   {
-    OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(restEndpoint);
-    // don't cache the validation response
+    OkHttpClient client = OkHttpUtils.getClient(restEndpoint,
+      Duration.ofSeconds(FetchOptions.defaults().getTimeoutSeconds()));
+    // don't cache the validation response; headers() replaces all headers, so the cache control is set after it
     Request.Builder builder = new Request.Builder()
-      .cacheControl(OkHttpUtils.getCacheControl(0))
       .url(restEndpoint)
       .headers(buildHeaders(credentials, mimeType != null ? mimeType : MimeType.APPLICATION_JSON,
-        Collections.emptyMap()));
+        Collections.emptyMap()))
+      .cacheControl(OkHttpUtils.getCacheControl(0));
 
     try (Response response = client.newCall(builder.build()).execute()) {
       int statusCode = response.code();
@@ -333,23 +439,35 @@ public class RestValueService {
    * @param url          A http/https web address of the page to request
    * @param credentials  The credentials required to access said endpoint
    * @param mimeType     The MIME type of the expected REST/Web response
-   * @param cacheTime    Time for how long the REST response gets cached for in minutes
-   * @return A {@link ResultContainer} capsuling either the response in the desired {@link MimeType} or an error message
+   * @param fetch        The fetch this page belongs to: the time left for the request and the cache control
+   * @return A {@link ResultContainer} capsuling either the response in the desired {@link MimeType} or an error
+   * message together with the HTTP status or exception name, flagged when the fetch ran out of time
    */
   private static ResultContainer<PageResponse> getPageFromRestEndpoint(final String url,
                                                                        final StandardCredentials credentials,
                                                                        final MimeType mimeType,
-                                                                       final Integer cacheTime,
+                                                                       final Fetch fetch,
                                                                        final Map<String, String> customHeaders)
   {
     ResultContainer<PageResponse> container = new ResultContainer<>(null);
 
-    OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(url);
-    Request request = new Request.Builder()
-      .url(url)
-      .cacheControl(OkHttpUtils.getCacheControl(cacheTime))
-      .headers(buildHeaders(credentials, mimeType, customHeaders))
-      .build();
+    Request request;
+    try {
+      // headers() replaces all headers, so the cache control is set after it
+      request = new Request.Builder()
+        .url(url)
+        .headers(buildHeaders(credentials, mimeType, customHeaders))
+        .cacheControl(fetch.cacheControl())
+        .build();
+    }
+    catch (IllegalArgumentException ex) {
+      // not a http/https URL
+      log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+      container.setErrorMsg(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+      container.setErrorCause(ex.getClass().getSimpleName());
+      return container;
+    }
+    OkHttpClient client = OkHttpUtils.getClient(url, fetch.remaining());
 
     try (Response response = client.newCall(request).execute()) {
       int statusCode = response.code();
@@ -363,17 +481,33 @@ public class RestValueService {
       else if (statusCode < 500) {
         log.warning(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
         container.setErrorMsg(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
+        container.setErrorCause(String.valueOf(statusCode));
       }
       else {
         log.warning(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
         container.setErrorMsg(Messages.RLP_RestValueService_warn_ReqServerErr(statusCode));
+        container.setErrorCause(String.valueOf(statusCode));
       }
     }
     catch (UnknownHostException ex) {
       log.warning(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
       container.setErrorMsg(Messages.RLP_RestValueService_warn_UnknownHost(ex.getMessage()));
+      container.setErrorCause(ex.getClass().getSimpleName());
+    }
+    catch (InterruptedIOException ex) {
+      container.setErrorCause(ex.getClass().getSimpleName());
+      if (fetch.isDeadlineReached()) {
+        // the call timeout (the time left of the fetch) ran out; reported by the caller
+        container.setErrorMsg(fetch.timeoutMessage());
+        container.setTimedOut(true);
+      }
+      else {
+        log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+        container.setErrorMsg(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
+      }
     }
     catch (IOException ex) {
+      container.setErrorCause(ex.getClass().getSimpleName());
       log.warning(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
       container.setErrorMsg(Messages.RLP_RestValueService_warn_OkHttpErr(ex.getClass().getName()));
       log.fine(EX_CLASS + ex.getClass().getName() + '\n'
@@ -555,6 +689,7 @@ public class RestValueService {
     catch (Exception ex) {
       log.warning(Messages.RLP_RestValueService_warn_FilterErr(ex.getClass().getName()));
       container.setErrorMsg(Messages.RLP_RestValueService_warn_FilterErr(ex.getClass().getName()));
+      container.setErrorCause(ex.getClass().getSimpleName());
       log.fine(EX_CLASS + ex.getClass().getName() + '\n'
                  + EX_MESSAGE + ex.getMessage());
     }

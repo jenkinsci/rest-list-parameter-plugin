@@ -25,8 +25,14 @@ public final class RestListParameterGlobalConfig extends GlobalConfiguration {
    */
   private static final int DEFAULT_CACHE_TIME = 0;
 
+  /**
+   * The default for {@link #fetchTimeout}.
+   */
+  private static final int DEFAULT_FETCH_TIMEOUT = 60;
+
   private Long cacheSize;
   private Integer cacheTime;
+  private Integer fetchTimeout;
 
   public RestListParameterGlobalConfig() {
     load();
@@ -85,5 +91,41 @@ public final class RestListParameterGlobalConfig extends GlobalConfiguration {
     }
 
     return FormValidation.error(Messages.RLP_GlobalConfig_ValidationErr_CacheTime());
+  }
+
+  /**
+   * @return How many seconds one fetch of a parameter's entries, including all its pages, may take
+   */
+  public Integer getFetchTimeout() {
+    return fetchTimeout != null && fetchTimeout > 0 ? fetchTimeout : DEFAULT_FETCH_TIMEOUT;
+  }
+
+  @DataBoundSetter
+  public void setFetchTimeout(Integer fetchTimeout) {
+    this.fetchTimeout = fetchTimeout;
+    save();
+  }
+
+  /**
+   * Removes the cached entries of all parameters (the value cache); the HTTP response cache is not affected.
+   */
+  @POST
+  public FormValidation doClearValueCache() {
+    Jenkins.get().checkPermission(Jenkins.ADMINISTER);
+    ValueCache.get().clear();
+    return FormValidation.ok(Messages.RLP_GlobalConfig_ValueCacheCleared());
+  }
+
+  @POST
+  public FormValidation doCheckFetchTimeout(@QueryParameter Integer fetchTimeout) {
+    if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+      return FormValidation.ok();
+    }
+
+    if (fetchTimeout != null && fetchTimeout > 0) {
+      return FormValidation.ok();
+    }
+
+    return FormValidation.error(Messages.RLP_GlobalConfig_ValidationErr_FetchTimeout());
   }
 }

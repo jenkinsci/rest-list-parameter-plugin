@@ -1,4 +1,9 @@
 <div>
-  This value sets the default max age of cached responses. If changed any new REST List Parameter will use the new value as their default max age.
-  The unit of this value is minutes and if it is set to/left at 0 (including in the actual parameter configuration) skips the cache lookup and refreshes the values each request.
+  This value sets the default cache max age of new REST List and REST Multi List Parameters, in minutes.
+  A parameter keeps the values of a successful fetch (all pages, after expressions, filter and order) in memory for
+  its cache max age, whatever caching headers the endpoint sends; 0 means values are not cached and every request
+  contacts the endpoint.<br/>
+  Cached values are kept per job, parameter and value source, for up to 1000 parameters, and are gone after a restart.
+  Users can refresh a parameter's values on the build form, and <em>Clear Value Cache</em> below removes the cached
+  values of all parameters without saving this page.
 </div>

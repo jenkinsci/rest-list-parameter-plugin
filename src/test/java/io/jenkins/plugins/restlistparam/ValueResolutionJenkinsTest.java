@@ -9,6 +9,7 @@ import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.util.FormValidation;
 import hudson.util.Secret;
+import io.jenkins.plugins.restlistparam.logic.ValueService;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import org.htmlunit.html.DomElement;
@@ -80,6 +81,22 @@ class ValueResolutionJenkinsTest {
     }
   }
 
+  @Test
+  void preparingRerunDoesNotContactTheEndpoint(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/list", "[\"v1.0\", \"v1.1\"]");
+      RestListParameterDefinition def = new RestListParameterDefinition(
+        "p", "d", stub.url("/list"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 0, "", false);
+
+      RestListParameterDefinition rerun = (RestListParameterDefinition)
+        def.copyWithDefaultValue(new RestListParameterValue("p", "v1.0", "d"));
+
+      assertEquals("v1.0", rerun.getDefaultValue());
+      assertEquals(0, stub.requests().size(), "the re-run form loads its entries itself");
+    }
+  }
+
   // Free-text prefill (build-parameter-form)
 
   @Test
@@ -93,22 +110,18 @@ class ValueResolutionJenkinsTest {
       FreeStyleProject project = r.createFreeStyleProject();
       project.addProperty(new ParametersDefinitionProperty(def));
 
-      JenkinsRule.WebClient wc = r.createWebClient();
-      wc.getOptions().setJavaScriptEnabled(false);
-      // Jenkins serves the parameters form for a GET on build, with status 405
-      wc.setThrowExceptionOnFailingStatusCode(false);
-      HtmlPage page = wc.getPage(project, "build?delay=0sec");
+      HtmlPage page = BuildForms.open(r, project);
 
       HtmlInput input = page.querySelector("input[name=value]");
       assertNotNull(input, "free-text input not rendered");
-      String prefill = input.getValueAttribute();
+      String prefill = input.getValue();
       assertEquals("v10.7.7", JsonPath.read(prefill, "$.name"));
       DomElement option = page.querySelector("datalist option");
       assertNotNull(option);
       boolean matchesSuggestion = page.querySelectorAll("datalist option").stream()
         .anyMatch(node -> prefill.equals(((DomElement) node).getAttribute("value")));
       assertTrue(matchesSuggestion, "prefill should be the value the dropdown would submit");
-      assertEquals(1, stub.requestCount("/tags"), "the form should fetch once per render");
+      assertEquals(1, stub.requestCount("/tags"), "the form should fetch once per load");
     }
   }
 
@@ -183,9 +196,7 @@ class ValueResolutionJenkinsTest {
       FreeStyleProject project = r.createFreeStyleProject();
       project.addProperty(new ParametersDefinitionProperty(def));
 
-      JenkinsRule.WebClient wc = r.createWebClient();
-      wc.setThrowExceptionOnFailingStatusCode(false);
-      HtmlPage page = wc.getPage(project, "build?delay=0sec");
+      HtmlPage page = BuildForms.open(r, project);
       r.submit(page.getFormByName("parameters"));
       r.waitUntilNoActivity();
 
@@ -207,16 +218,15 @@ class ValueResolutionJenkinsTest {
       stub.respondJson("/filtered", "[\"a\", \"b\"]");
       stub.respond("/broken", 200, "application/json", "{not json");
 
-      assertEquals("", emptyAllowed(stub.url("/empty"), ".*").getErrorMsg());
-      assertEquals("", emptyAllowed(stub.url("/filtered"), "x.*").getErrorMsg());
-      assertEquals(Messages.RLP_ValueResolver_warn_jPath_MalformedJson(), emptyAllowed(stub.url("/broken"), ".*").getErrorMsg(),
+      assertEquals("", errorOf(emptyAllowed(stub.url("/empty"), ".*")));
+      assertEquals("", errorOf(emptyAllowed(stub.url("/filtered"), "x.*")));
+      assertEquals(Messages.RLP_ValueResolver_warn_jPath_MalformedJson(), errorOf(emptyAllowed(stub.url("/broken"), ".*")),
         "genuine errors must still be reported");
 
       RestListParameterDefinition notAllowed = new RestListParameterDefinition(
         "p", "d", stub.url("/empty"), "", MimeType.APPLICATION_JSON, "$.*", "$",
         ValueOrder.NONE, ".*", 0, "", false);
-      notAllowed.getValues();
-      assertEquals("Json-Path expression yielded no results", notAllowed.getErrorMsg());
+      assertEquals("Json-Path expression yielded no results", errorOf(notAllowed));
     }
   }
 
@@ -227,9 +237,7 @@ class ValueResolutionJenkinsTest {
       FreeStyleProject project = r.createFreeStyleProject();
       project.addProperty(new ParametersDefinitionProperty(emptyAllowed(stub.url("/empty"), ".*")));
 
-      JenkinsRule.WebClient wc = r.createWebClient();
-      wc.setThrowExceptionOnFailingStatusCode(false);
-      HtmlPage page = wc.getPage(project, "build?delay=0sec");
+      HtmlPage page = BuildForms.open(r, project);
       assertFalse(page.asNormalizedText().contains("yielded no results"), page.asNormalizedText());
       r.submit(page.getFormByName("parameters"));
       r.waitUntilNoActivity();
@@ -246,8 +254,11 @@ class ValueResolutionJenkinsTest {
       "p", "d", endpoint, "", MimeType.APPLICATION_JSON, "$.*", "$",
       ValueOrder.NONE, filter, 0, "", false);
     def.setAllowEmptyValue(true);
-    def.getValues();
     return def;
+  }
+
+  private static String errorOf(final RestListParameterDefinition def) {
+    return ValueService.entries(def, null, false).getErrorMsg().orElse("");
   }
 
   // Endpoint check (configuration-validation)
