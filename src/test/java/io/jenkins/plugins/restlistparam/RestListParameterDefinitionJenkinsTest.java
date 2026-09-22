@@ -9,7 +9,9 @@ import hudson.model.ParameterDefinition;
 import hudson.model.StringParameterValue;
 import hudson.util.Secret;
 import io.jenkins.plugins.restlistparam.model.CustomHeader;
+import io.jenkins.plugins.restlistparam.model.LinkHeaderPagination;
 import io.jenkins.plugins.restlistparam.model.MimeType;
+import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import jenkins.model.Jenkins;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
@@ -34,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -266,6 +269,88 @@ class RestListParameterDefinitionJenkinsTest {
     RestListParameterDefinition def = new RestListParameterDefinition(
       "p", "d", "https://example.invalid", "", MimeType.APPLICATION_JSON, "$.*", "$");
     assertTrue(def.getCustomHeaders().isEmpty());
+  }
+
+  @Test
+  void paginationDefaultsToNone(JenkinsRule r) {
+    RestListParameterDefinition def = new RestListParameterDefinition(
+      "p", "d", "https://example.invalid", "", MimeType.APPLICATION_JSON, "$.*", "$");
+    assertNull(def.getPagination());
+  }
+
+  @Test
+  void valuesFromAllPagesAreOffered(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/tags", "[\"v1\",\"v2\"]")
+          .withHeader("/tags", "Link", "<" + stub.url("/tags?page=2") + ">; rel=\"next\"");
+      stub.respondJson("/tags?page=2", "[\"v3\"]");
+      RestListParameterDefinition def = new RestListParameterDefinition(
+        "p", "d", stub.url("/tags"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 0, "", false);
+      def.setPagination(new LinkHeaderPagination());
+
+      assertEquals(List.of("v1", "v2", "v3"), def.getValues().stream().map(ValueItem::getValue).toList());
+      assertEquals("", def.getErrorMsg());
+      assertTrue(def.isValid(new StringParameterValue("p", "v3")), "a value from page 2 is a valid choice");
+    }
+  }
+
+  @Test
+  void everyPageCarriesCredentialAndCustomHeaders(JenkinsRule r) throws Exception {
+    SystemCredentialsProvider.getInstance().getCredentials().add(
+      new StringCredentialsImpl(CredentialsScope.GLOBAL, "api-token", "api token", Secret.fromString("s3cret")));
+    SystemCredentialsProvider.getInstance().save();
+
+    try (StubHttpServer stub = threePages(null)) {
+      RestListParameterDefinition def = new RestListParameterDefinition(
+        "p", "d", stub.url("/p"), "api-token", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 0, "", false);
+      CustomHeader header = new CustomHeader("X-API-Key");
+      header.setValue(Secret.fromString("key-123"));
+      def.setCustomHeaders(Collections.singletonList(header));
+      def.setPagination(new LinkHeaderPagination());
+
+      assertEquals(3, def.getValues().size());
+
+      assertEquals(3, stub.requests().size());
+      for (StubHttpServer.RecordedRequest request : stub.requests()) {
+        assertEquals("Bearer s3cret", request.header("Authorization"), request.uri());
+        assertEquals("key-123", request.header("X-API-Key"), request.uri());
+        assertEquals("application/json", request.header("Accept"), request.uri());
+      }
+    }
+  }
+
+  @Test
+  void everyPageIsCached(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = threePages("max-age=600")) {
+      RestListParameterDefinition def = new RestListParameterDefinition(
+        "p", "d", stub.url("/p"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 10, "", false);
+      def.setPagination(new LinkHeaderPagination());
+
+      assertEquals(3, def.getValues().size());
+      assertEquals(3, stub.requests().size());
+
+      assertEquals(3, def.getValues().size());
+      assertEquals(3, stub.requests().size(), "a second fetch within the cache time sends no request");
+    }
+  }
+
+  /** Pages {@code /p}, {@code /p?page=2}, {@code /p?page=3} linked by {@code Link} headers. */
+  private static StubHttpServer threePages(final String cacheControl) throws Exception {
+    StubHttpServer stub = new StubHttpServer();
+    for (int page = 1; page <= 3; page++) {
+      String path = page == 1 ? "/p" : "/p?page=" + page;
+      stub.respondJson(path, "[\"" + page + "\"]");
+      if (page < 3) {
+        stub.withHeader(path, "Link", "<" + stub.url("/p?page=" + (page + 1)) + ">; rel=\"next\"");
+      }
+      if (cacheControl != null) {
+        stub.withHeader(path, "Cache-Control", cacheControl);
+      }
+    }
+    return stub;
   }
 
   private static class HeaderCaptureServer implements AutoCloseable {

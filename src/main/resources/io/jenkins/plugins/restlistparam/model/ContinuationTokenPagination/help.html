@@ -1,0 +1,10 @@
+<div>
+  Reads a continuation token from each Json response with the <em>Token Expression</em> and requests the
+  <em>REST Endpoint</em> again with the token as the <em>Query Parameter</em>. Pagination ends when the expression
+  finds nothing or yields <code>null</code> or an empty string.
+  <p>
+    Examples: Nexus 3 (<code>$.continuationToken</code> sent as <code>continuationToken</code>) and offset based APIs
+    such as Bitbucket Server (<code>$.nextPageStart</code> sent as <code>start</code>).
+    Only available for the <code>APPLICATION_JSON</code> MIME type.
+  </p>
+</div>

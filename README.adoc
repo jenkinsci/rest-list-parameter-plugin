@@ -32,6 +32,7 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 * Specify any REST/Web endpoint that returns either a Json or XML response with values to select from for a build
 * Authenticate against the endpoint if required (either with `BASIC` or `BEARER` authentication)
 * Add custom HTTP headers to REST requests
+* Follow paginated REST APIs (`Link` header or continuation token) to offer values beyond the first page
 * Filter/Pars the values of the web response with Json-Path or xPath (depending on MIME type)
 * Set a per-selected default value (as long as that value is within the received value list)
 * Pick several values in one build with the link:#multi-list-parameter[REST Multi List Parameter]
@@ -155,6 +156,80 @@ If a custom `Authorization` header is configured, it overrides the default Basic
 The `REST Endpoint` field check does not send custom headers.
 If the endpoint rejects that check with 401 or 403, it shows a warning instead of an error; use `Test Configuration` to verify the headers.
 
+[#pagination]
+=== Pagination
+
+Many APIs return their values in pages, for example GitHub (at most 100 items per page) or Nexus 3.
+Without pagination, the parameter only offers the values of the first page.
+Check `Follow paginated responses` in the parameter's advanced configuration and pick a strategy:
+
+[cols="1,2,1"]
+|===
+|Strategy |How the next page is found |Used by
+
+|`Link header` (`linkHeader`)
+|The URL of the `Link` response header entry whose `rel` includes `next`. Relative URLs are resolved against the page that returned them. Works for Json and XML.
+|GitHub, GitLab, Gitea, Harbor
+
+|`Continuation token` (`continuationToken`)
+|A token read from the Json body with the `Token Expression` (Json-Path). The `REST Endpoint` is requested again with the token as the `Query Parameter`. The endpoint's other query parameters are kept, and a parameter of the same name is replaced. Json only.
+|Nexus 3, Bitbucket Server (`$.nextPageStart` as `start`)
+|===
+
+Pagination ends when a page has no next link, or when the token expression finds nothing, `null` or an empty string.
+
+The `Value Expression` and `Display Expression` are applied to *each page on its own*, so write them for a single page (for Nexus 3, `$.items[*].version`, not an expression over all pages).
+The entries of all pages are joined in page order, and the `Value Filter Pattern` and `Apply Sort Order` are then applied once to the combined list.
+A page without matches is fine. Only when all pages together yield nothing is it reported as "no values" (subject to `Allow Empty Value`).
+
+Page limit::
+`Max Pages` limits the number of requests per fetch, counting the first one: 10 by default, at most 100 (larger values are treated as 100).
+When the limit is reached while the last page still points to a next page, the values fetched so far are used and a warning is logged.
+All pages are requested one after another while the `Build with Parameters` form renders, so each page adds to the time the form takes to open.
+Each page is cached individually for the `Cache Max Age`.
+
+Same-host rule::
+Every page is requested with the same credentials and custom headers as the first one.
+To keep them from leaking, pagination only follows URLs with the same scheme, host and port as the `REST Endpoint`.
+A next page on another host fails the fetch with `Next page is not on the same host as the Rest Endpoint: <origin>`, and no request is sent to it.
+
+Failures and loops::
+A failure on any page fails the whole list. For page 2 and later, the error names the page, for example `Encountered Http Server Error: 503 (page 4)`.
+A next page that was already requested, or a repeated token, ends pagination with a warning and keeps the values fetched so far.
+
+`Test Configuration` uses the form's pagination settings, including unsaved changes, and reports the pages fetched, for example `Test Successful! 57 Values from 3 pages, first: v1.0`.
+When the page limit was reached, the result is a warning ending in `(page limit reached, more values may exist)`.
+
+.GitHub tags (`Link` header)
+[source,groovy]
+----
+RESTList(
+  name: 'TAG',
+  description: '',
+  restEndpoint: 'https://api.github.com/repos/jenkinsci/jenkins/tags?per_page=100',
+  credentialId: '',
+  mimeType: 'APPLICATION_JSON',
+  valueExpression: '$.*.name',
+  pagination: linkHeader(maxPages: 5)
+)
+----
+
+.Nexus 3 components (continuation token)
+[source,groovy]
+----
+RESTList(
+  name: 'VERSION',
+  description: '',
+  restEndpoint: 'https://nexus.example.com/service/rest/v1/components?repository=releases',
+  credentialId: 'nexus-user',
+  mimeType: 'APPLICATION_JSON',
+  valueExpression: '$.items[*].version',
+  pagination: continuationToken(tokenExpression: '$.continuationToken', queryParameter: 'continuationToken')
+)
+----
+
+Omitting `pagination` keeps a single request per fetch. The same `pagination` property is available on the link:#multi-list-parameter[REST Multi List Parameter].
+
 [#validation]
 === Parameter Config Validation
 
@@ -218,7 +293,8 @@ pipeline {
       customHeaders: [   // optional
         [name: 'X-API-Key', credentialId: 'example-api-key'],
         [name: 'Authorization', credentialId: 'example-auth-token', valuePrefix: 'CustomFormat ']
-      ]
+      ],
+      pagination: linkHeader(maxPages: 5) // optional, see Pagination
     )
   }
 

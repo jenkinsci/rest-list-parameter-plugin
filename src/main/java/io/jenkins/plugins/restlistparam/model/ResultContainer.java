@@ -6,6 +6,8 @@ public class ResultContainer<V> {
   private String errorMsg = null;
   private boolean noValues = false;
   private V value;
+  private int pagesFetched = 1;
+  private boolean pageLimitReached = false;
 
   public ResultContainer(V defaultValue) {
     this.value = defaultValue;
@@ -38,5 +40,27 @@ public class ResultContainer<V> {
 
   public V getValue() {
     return value;
+  }
+
+  /**
+   * @return How many pages were fetched to produce this result (1 without pagination)
+   */
+  public int getPagesFetched() {
+    return pagesFetched;
+  }
+
+  public void setPagesFetched(int pagesFetched) {
+    this.pagesFetched = pagesFetched;
+  }
+
+  /**
+   * @return Whether pagination stopped at the page limit while a next page was still available
+   */
+  public boolean isPageLimitReached() {
+    return pageLimitReached;
+  }
+
+  public void setPageLimitReached(boolean pageLimitReached) {
+    this.pageLimitReached = pageLimitReached;
   }
 }

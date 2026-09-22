@@ -9,6 +9,7 @@ import io.jenkins.plugins.restlistparam.model.CustomHeader;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import org.htmlunit.html.DomNode;
+import org.htmlunit.html.HtmlCheckBoxInput;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlInput;
 import org.htmlunit.html.HtmlOption;
@@ -23,7 +24,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WithJenkins
@@ -81,6 +84,62 @@ class RestMultiListParameterUiJenkinsTest {
       assertTrue(parameterBlock.asNormalizedText().contains("Test Successful! 3 Values, first: a"),
         parameterBlock.asNormalizedText());
     }
+  }
+
+  @Test
+  void testConfigurationUsesUnsavedPaginationSettings(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/components?repository=releases",
+        "{\"items\":[{\"version\":\"1.0\"},{\"version\":\"1.1\"}],\"continuationToken\":\"abc\"}");
+      stub.respondJson("/components?repository=releases&continuationToken=abc",
+        "{\"items\":[{\"version\":\"2.0\"}],\"continuationToken\":null}");
+      FreeStyleProject project = project(r, new RestMultiListParameterDefinition(
+        "TARGETS", "d", stub.url("/components?repository=releases"), "", MimeType.APPLICATION_JSON,
+        "$.items[*].version", "$", ValueOrder.NONE, ".*", 0, "", false));
+
+      JenkinsRule.WebClient wc = r.createWebClient();
+      HtmlPage page = wc.getPage(project, "configure");
+      HtmlElement testButton = page.querySelector("button[data-validate-button-method=testConfiguration]");
+      HtmlElement parameterBlock = (HtmlElement) testButton.getFirstByXPath("ancestor::div[contains(@class,'repeated-chunk')][1]");
+      for (Object advanced : parameterBlock.getByXPath(".//button[contains(@class,'advanced-button')]")) {
+        ((HtmlElement) advanced).click();
+      }
+
+      HtmlCheckBoxInput enabled = parameterBlock.querySelector("input[name='paginationEnabled']");
+      assertNotNull(enabled, "pagination block not rendered");
+      assertFalse(enabled.isChecked());
+      enabled.click();
+      HtmlSelect strategy = parameterBlock.querySelector(".rlp-pagination select.dropdownList");
+      strategy.setSelectedAttribute(strategy.getOptionByText("Continuation token in the Json body"), true);
+      wc.waitForBackgroundJavaScript(5000);
+      activeInput(parameterBlock, "tokenExpression").setValue("$.continuationToken");
+      activeInput(parameterBlock, "queryParameter").setValue("continuationToken");
+
+      // the REST Endpoint field check may already have requested the endpoint while the page loaded
+      int before = stub.requests().size();
+      testButton.click();
+      wc.waitForBackgroundJavaScript(5000);
+
+      List<String> requested = stub.requestUris();
+      assertEquals(List.of("/components?repository=releases", "/components?repository=releases&continuationToken=abc"),
+        requested.subList(before, requested.size()));
+      assertTrue(parameterBlock.asNormalizedText().contains("Test Successful! 3 Values from 2 pages, first: 1.0"),
+        parameterBlock.asNormalizedText());
+      assertEquals("", ((HtmlInput) parameterBlock.querySelector("input[name='_.paginationJson']")).getValue(),
+        "hidden field should be cleared after the request");
+      assertNull(((RestMultiListParameterDefinition) project.getProperty(ParametersDefinitionProperty.class)
+        .getParameterDefinition("TARGETS")).getPagination(), "the settings were tested, not saved");
+    }
+  }
+
+  /** The input of the selected pagination strategy, skipping the hidden entries of the others. */
+  private static HtmlInput activeInput(final HtmlElement block, final String field) {
+    for (DomNode node : block.querySelectorAll("input[name='_." + field + "']")) {
+      if (node.getFirstByXPath("ancestor-or-self::*[@field-disabled]") == null) {
+        return (HtmlInput) node;
+      }
+    }
+    throw new AssertionError("no active input for " + field);
   }
 
   // Build form (6.2)

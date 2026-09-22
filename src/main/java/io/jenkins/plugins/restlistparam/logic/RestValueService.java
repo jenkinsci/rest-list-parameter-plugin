@@ -6,11 +6,13 @@ import hudson.util.FormValidation;
 import io.jenkins.plugins.restlistparam.Messages;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.MimeType;
+import io.jenkins.plugins.restlistparam.model.Pagination;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import io.jenkins.plugins.restlistparam.util.HTTPHeaders;
 import io.jenkins.plugins.restlistparam.util.OkHttpUtils;
 import okhttp3.Headers;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -74,23 +76,209 @@ public class RestValueService {
                                                      final ValueOrder order,
                                                      final Map<String, String> customHeaders)
   {
-    ResultContainer<List<ValueItem>> valueList = new ResultContainer<>(Collections.emptyList());
-    ResultContainer<String> rawValues = getValueStringFromRestEndpoint(restEndpoint, credentials, mimeType, cacheTime,
-      customHeaders);
-    Optional<String> rawValueError = rawValues.getErrorMsg();
+    return get(restEndpoint, credentials, mimeType, cacheTime, valueExpression, displayExpression, filter, order,
+      customHeaders, null);
+  }
 
-    if (!rawValueError.isPresent()) {
-      valueList = convertToValuesList(mimeType, rawValues.getValue(), valueExpression, displayExpression);
-    }
-    else {
-      valueList.setErrorMsg(rawValueError.get());
-    }
+  /**
+   * Like {@link #get(String, StandardCredentials, MimeType, Integer, String, String, String, ValueOrder)}, but sends
+   * {@code customHeaders} with every request and, when {@code pagination} is set, follows the endpoint's pages.
+   * <p>
+   * The value and display expressions are applied to each page on its own, the entries are joined in page order,
+   * and the filter and order are applied once to the combined list. A failure on any page fails the whole fetch.
+   *
+   * @param customHeaders Additional headers sent with every request
+   * @param pagination    How to find the next page, or {@code null} to send a single request
+   * @return A {@link ResultContainer} with the values or a user friendly error message, and the number of pages
+   * fetched and whether the page limit was reached
+   */
+  public static ResultContainer<List<ValueItem>> get(final String restEndpoint,
+                                                     final StandardCredentials credentials,
+                                                     final MimeType mimeType,
+                                                     final Integer cacheTime,
+                                                     final String valueExpression,
+                                                     final String displayExpression,
+                                                     final String filter,
+                                                     final ValueOrder order,
+                                                     final Map<String, String> customHeaders,
+                                                     final Pagination pagination)
+  {
+    ResultContainer<List<ValueItem>> valueList = getValuesFromAllPages(restEndpoint, credentials, mimeType, cacheTime,
+      valueExpression, displayExpression, customHeaders, pagination);
 
     if (!valueList.getErrorMsg().isPresent() && isFilterOrOrderSet(filter, order)) {
-      valueList = filterAndSortValues(valueList.getValue(), filter, order);
+      ResultContainer<List<ValueItem>> filtered = filterAndSortValues(valueList.getValue(), filter, order);
+      filtered.setPagesFetched(valueList.getPagesFetched());
+      filtered.setPageLimitReached(valueList.isPageLimitReached());
+      valueList = filtered;
     }
 
     return valueList;
+  }
+
+  /**
+   * Fetches the first page and, with {@code pagination}, every following page up to the page limit, and extracts
+   * the values of each page.
+   *
+   * @return The entries of all pages in page order (not yet filtered or ordered) or the first error encountered
+   */
+  private static ResultContainer<List<ValueItem>> getValuesFromAllPages(final String restEndpoint,
+                                                                        final StandardCredentials credentials,
+                                                                        final MimeType mimeType,
+                                                                        final Integer cacheTime,
+                                                                        final String valueExpression,
+                                                                        final String displayExpression,
+                                                                        final Map<String, String> customHeaders,
+                                                                        final Pagination pagination)
+  {
+    ResultContainer<List<ValueItem>> container = new ResultContainer<>(Collections.emptyList());
+
+    if (pagination != null) {
+      Optional<String> incompatible = pagination.incompatibilityWith(mimeType);
+      if (incompatible.isPresent()) {
+        log.warning(incompatible.get());
+        container.setErrorMsg(incompatible.get());
+        return container;
+      }
+    }
+
+    FetchedPages pages = new FetchedPages();
+    String url = restEndpoint;
+    int page = 1;
+
+    while (true) {
+      ResultContainer<PageResponse> fetched = getPageFromRestEndpoint(url, credentials, mimeType, cacheTime,
+        customHeaders);
+      if (fetched.getErrorMsg().isPresent()) {
+        container.setErrorMsg(onPage(fetched.getErrorMsg().get(), page));
+        return container;
+      }
+      PageResponse response = fetched.getValue();
+
+      Optional<String> extractionError = pages.add(convertToValuesList(mimeType, response.getBody(), valueExpression,
+        displayExpression));
+      if (extractionError.isPresent()) {
+        container.setErrorMsg(onPage(extractionError.get(), page));
+        return container;
+      }
+      container.setPagesFetched(page);
+
+      if (pagination == null) {
+        break;
+      }
+      ResultContainer<HttpUrl> next = nextPage(pagination, restEndpoint, url, response, page, pages);
+      if (next.getErrorMsg().isPresent()) {
+        container.setErrorMsg(next.getErrorMsg().get());
+        return container;
+      }
+      container.setPageLimitReached(next.isPageLimitReached());
+      if (next.getValue() == null) {
+        break;
+      }
+      url = next.getValue().toString();
+      ++page;
+    }
+
+    return pages.toResult(container);
+  }
+
+  /**
+   * Decides where pagination continues after {@code page}, applying the origin, loop and page limit guards.
+   *
+   * @param restEndpoint The configured REST endpoint (the first request succeeded, so it is a valid URL)
+   * @param url          The URL requested for {@code page}
+   * @return The next URL; {@code null} when pagination ends (flagged when it ended at the page limit);
+   * or an error when the next page is on another origin
+   */
+  private static ResultContainer<HttpUrl> nextPage(final Pagination pagination,
+                                                   final String restEndpoint,
+                                                   final String url,
+                                                   final PageResponse response,
+                                                   final int page,
+                                                   final FetchedPages pages)
+  {
+    ResultContainer<HttpUrl> result = new ResultContainer<>(null);
+    HttpUrl endpointUrl = HttpUrl.get(restEndpoint);
+    pages.visitedUrls.add(HttpUrl.get(url));
+
+    Optional<Pagination.NextPage> next = pagination.next(new Pagination.Page(endpointUrl, response.getRequestUrl(),
+      response.getHeaders(), response.getBody()));
+    if (!next.isPresent()) {
+      return result;
+    }
+    HttpUrl nextUrl = next.get().getUrl();
+    String token = next.get().getToken();
+    // checked before the page limit, so a foreign link on the last allowed page is still reported
+    if (!isSameOrigin(endpointUrl, nextUrl)) {
+      String origin = nextUrl.scheme() + "://" + nextUrl.host() + ":" + nextUrl.port();
+      log.warning(Messages.RLP_RestValueService_err_ForeignOrigin(origin));
+      result.setErrorMsg(Messages.RLP_RestValueService_err_ForeignOrigin(origin));
+    }
+    else if (pages.visitedUrls.contains(nextUrl) || (token != null && pages.usedTokens.contains(token))) {
+      log.warning(Messages.RLP_RestValueService_warn_RepeatedPage(page));
+    }
+    else if (page >= pagination.getEffectiveMaxPages()) {
+      log.warning(Messages.RLP_RestValueService_warn_PageLimitReached(page));
+      result.setPageLimitReached(true);
+    }
+    else {
+      if (token != null) {
+        pages.usedTokens.add(token);
+      }
+      result.setValue(nextUrl);
+    }
+    return result;
+  }
+
+  /**
+   * The entries collected so far during one fetch, and the URLs and tokens already used.
+   */
+  private static final class FetchedPages {
+    private final List<ValueItem> items = new ArrayList<>();
+    private final Set<HttpUrl> visitedUrls = new HashSet<>();
+    private final Set<String> usedTokens = new HashSet<>();
+    private String noValuesMsg;
+
+    /**
+     * Adds a page's entries. A page without entries is fine; only an empty combined result counts as "no values".
+     *
+     * @return The page's extraction error, if any
+     */
+    Optional<String> add(final ResultContainer<List<ValueItem>> pageValues) {
+      if (pageValues.isNoValues()) {
+        noValuesMsg = pageValues.getErrorMsg().orElse(null);
+        return Optional.empty();
+      }
+      if (pageValues.getErrorMsg().isPresent()) {
+        return pageValues.getErrorMsg();
+      }
+      items.addAll(pageValues.getValue());
+      return Optional.empty();
+    }
+
+    ResultContainer<List<ValueItem>> toResult(final ResultContainer<List<ValueItem>> container) {
+      if (items.isEmpty() && noValuesMsg != null) {
+        container.setNoValues(noValuesMsg);
+      }
+      else {
+        container.setValue(items);
+      }
+      return container;
+    }
+  }
+
+  private static boolean isSameOrigin(final HttpUrl endpoint, final HttpUrl other) {
+    // HttpUrl normalizes scheme and host to lower case and fills in the scheme's default port
+    return endpoint.scheme().equals(other.scheme())
+      && endpoint.host().equals(other.host())
+      && endpoint.port() == other.port();
+  }
+
+  /**
+   * Names the page an error occurred on; errors on the first page are kept unchanged.
+   */
+  private static String onPage(final String errorMsg, final int page) {
+    return page >= 2 ? Messages.RLP_RestValueService_err_OnPage(errorMsg, page) : errorMsg;
   }
 
   /**
@@ -140,25 +328,25 @@ public class RestValueService {
   }
 
   /**
-   * Performs the REST/Web request.
+   * Performs the REST/Web request for one page.
    *
-   * @param restEndpoint A http/https web address to the REST/Web endpoint
+   * @param url          A http/https web address of the page to request
    * @param credentials  The credentials required to access said endpoint
    * @param mimeType     The MIME type of the expected REST/Web response
    * @param cacheTime    Time for how long the REST response gets cached for in minutes
-   * @return A {@link ResultContainer} capsuling either the response body string in the desired {@link MimeType} or an error message
+   * @return A {@link ResultContainer} capsuling either the response in the desired {@link MimeType} or an error message
    */
-  private static ResultContainer<String> getValueStringFromRestEndpoint(final String restEndpoint,
-                                                                        final StandardCredentials credentials,
-                                                                        final MimeType mimeType,
-                                                                        final Integer cacheTime,
-                                                                        final Map<String, String> customHeaders)
+  private static ResultContainer<PageResponse> getPageFromRestEndpoint(final String url,
+                                                                       final StandardCredentials credentials,
+                                                                       final MimeType mimeType,
+                                                                       final Integer cacheTime,
+                                                                       final Map<String, String> customHeaders)
   {
-    ResultContainer<String> container = new ResultContainer<>("");
+    ResultContainer<PageResponse> container = new ResultContainer<>(null);
 
-    OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(restEndpoint);
+    OkHttpClient client = OkHttpUtils.getClientWithProxyAndCache(url);
     Request request = new Request.Builder()
-      .url(restEndpoint)
+      .url(url)
       .cacheControl(OkHttpUtils.getCacheControl(cacheTime))
       .headers(buildHeaders(credentials, mimeType, customHeaders))
       .build();
@@ -170,7 +358,7 @@ public class RestValueService {
         okhttp3.ResponseBody body = response.body();
         if (body != null)
           value = body.string();
-        container.setValue(value);
+        container.setValue(new PageResponse(value, response.headers(), response.request().url()));
       }
       else if (statusCode < 500) {
         log.warning(Messages.RLP_RestValueService_warn_ReqClientErr(statusCode));
@@ -193,6 +381,34 @@ public class RestValueService {
     }
 
     return container;
+  }
+
+  /**
+   * A fetched page: the body read in full, so the OkHttp response can be closed right away.
+   */
+  private static final class PageResponse {
+    private final String body;
+    private final Headers headers;
+    private final HttpUrl requestUrl;
+
+    private PageResponse(final String body, final Headers headers, final HttpUrl requestUrl) {
+      this.body = body;
+      this.headers = headers;
+      this.requestUrl = requestUrl;
+    }
+
+    String getBody() {
+      return body;
+    }
+
+    Headers getHeaders() {
+      return headers;
+    }
+
+    /** The URL that returned this page, after redirects. */
+    HttpUrl getRequestUrl() {
+      return requestUrl;
+    }
   }
 
   /**

@@ -1,0 +1,9 @@
+<div>
+  A Json-Path expression that reads the token for the next page from each response body, for example
+  <code>$.continuationToken</code> (Nexus 3) or <code>$.nextPageStart</code> (Bitbucket Server).
+  <p>
+    A string or number is used as the token. When the expression finds nothing, or yields <code>null</code> or an
+    empty string, the page is the last one. Any other result (an object, array or boolean) also ends pagination and
+    logs a warning.
+  </p>
+</div>

@@ -1,9 +1,15 @@
-// Forwards the parameter's custom header rows, including unsaved ones, to Test Configuration.
-// f:validateButton can only send flat fields, so on click (capture phase, before core's handler
-// reads the fields) the rows are serialized into the hidden customHeadersJson input, which is
-// cleared again right after so nothing extra is submitted with the job.
+// Forwards the parameter's nested settings, including unsaved ones, to Test Configuration: the custom
+// header rows and the pagination block. f:validateButton can only send flat fields, so on click
+// (capture phase, before core's handler reads the fields) they are serialized into the hidden
+// customHeadersJson and paginationJson inputs, which are cleared again right after so nothing extra
+// is submitted with the job.
 (function () {
   var FIELD = "_.customHeadersJson";
+  var PAGINATION_FIELD = "_.paginationJson";
+  var PAGINATION_KINDS = {
+    LinkHeaderPagination: "linkHeader",
+    ContinuationTokenPagination: "continuationToken",
+  };
 
   function isTestButton(button) {
     var withList = button.getAttribute("data-validate-button-with") || "";
@@ -43,11 +49,44 @@
     return JSON.stringify(headers);
   }
 
-  function clearAll() {
-    var fields = document.getElementsByName(FIELD);
-    for (var i = 0; i < fields.length; i++) {
-      fields[i].value = "";
+  // hidden dropdown entries (the strategies not selected) are marked field-disabled by core
+  function activeFieldValue(container, name) {
+    var inputs = container.querySelectorAll('[name="' + name + '"]');
+    for (var i = 0; i < inputs.length; i++) {
+      if (!inputs[i].closest("[field-disabled]")) {
+        return inputs[i].value != null ? inputs[i].value : "";
+      }
     }
+    return "";
+  }
+
+  // {kind, maxPages, tokenExpression, queryParameter} of the selected strategy, or "" when unchecked
+  function serializePagination(button) {
+    var enabled = nearestPreceding(document.getElementsByName("paginationEnabled"), button);
+    var container = nearestPreceding(document.querySelectorAll(".rlp-pagination"), button);
+    if (!enabled || !enabled.checked || !container) {
+      return "";
+    }
+    var clazz = activeFieldValue(container, "$class") || activeFieldValue(container, "stapler-class");
+    var kind = PAGINATION_KINDS[clazz.substring(clazz.lastIndexOf(".") + 1)];
+    if (!kind) {
+      return "";
+    }
+    return JSON.stringify({
+      kind: kind,
+      maxPages: activeFieldValue(container, "_.maxPages"),
+      tokenExpression: activeFieldValue(container, "_.tokenExpression"),
+      queryParameter: activeFieldValue(container, "_.queryParameter"),
+    });
+  }
+
+  function clearAll() {
+    [FIELD, PAGINATION_FIELD].forEach(function (name) {
+      var fields = document.getElementsByName(name);
+      for (var i = 0; i < fields.length; i++) {
+        fields[i].value = "";
+      }
+    });
   }
 
   document.addEventListener(
@@ -62,6 +101,10 @@
         return;
       }
       field.value = serializeHeaders(button);
+      var paginationField = nearestPreceding(document.getElementsByName(PAGINATION_FIELD), button);
+      if (paginationField) {
+        paginationField.value = serializePagination(button);
+      }
       // validateButton reads its fields synchronously in the click handler
       setTimeout(clearAll, 0);
     },

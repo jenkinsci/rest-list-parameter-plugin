@@ -7,16 +7,25 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 /**
- * Local HTTP stub for tests: serves a canned status and body per path on an ephemeral port
- * and records every request, so tests don't depend on the public internet.
+ * Local HTTP stub for tests: serves a canned status, body and optional headers per path (or path plus
+ * query string) on an ephemeral port and records every request, so tests don't depend on the public internet.
+ * <p>
+ * A request is answered by the response registered for its exact path and raw query string
+ * ({@code /api?page=2}), falling back to the one registered for its path alone ({@code /api}).
  */
 public class StubHttpServer implements AutoCloseable {
   private final HttpServer server;
@@ -29,9 +38,26 @@ public class StubHttpServer implements AutoCloseable {
     server.start();
   }
 
-  /** Serves {@code body} with {@code status} and {@code contentType} for requests to {@code path}. */
+  /**
+   * Serves {@code body} with {@code status} and {@code contentType} for requests to {@code path}.
+   * {@code path} may carry a raw (encoded) query string to answer only that exact query.
+   */
   public StubHttpServer respond(final String path, final int status, final String contentType, final String body) {
     responses.put(path, new Response(status, contentType, body));
+    return this;
+  }
+
+  /**
+   * Adds a response header to the response already registered for {@code path}.
+   * Calling it again with the same name adds another header line (e.g. several {@code Link} headers).
+   * It replaces the stub's default header of that name ({@code Content-Type}, {@code Cache-Control: no-store}).
+   */
+  public StubHttpServer withHeader(final String path, final String name, final String value) {
+    Response response = responses.get(path);
+    if (response == null) {
+      throw new IllegalStateException("No response registered for " + path);
+    }
+    response.headers.add(new String[]{name, value});
     return this;
   }
 
@@ -49,8 +75,14 @@ public class StubHttpServer implements AutoCloseable {
     }
   }
 
+  /** Number of requests to {@code path}, whatever their query string. */
   public long requestCount(final String path) {
     return requests().stream().filter(req -> req.path.equals(path)).count();
+  }
+
+  /** The full request URIs (path plus raw query string) in the order they were received. */
+  public List<String> requestUris() {
+    return requests().stream().map(RecordedRequest::uri).collect(Collectors.toList());
   }
 
   /** The most recent request, or {@code null} if none was received. */
@@ -60,13 +92,26 @@ public class StubHttpServer implements AutoCloseable {
   }
 
   private void handle(final HttpExchange exchange) throws IOException {
-    String path = exchange.getRequestURI().getPath();
-    requests.add(new RecordedRequest(path, exchange.getRequestHeaders()));
+    URI requestUri = exchange.getRequestURI();
+    String path = requestUri.getRawPath();
+    String uri = requestUri.getRawQuery() != null ? path + "?" + requestUri.getRawQuery() : path;
+    requests.add(new RecordedRequest(path, uri, exchange.getRequestHeaders()));
 
-    Response response = responses.getOrDefault(path, new Response(404, "text/plain", "not found"));
+    Response response = responses.get(uri);
+    if (response == null) {
+      response = responses.getOrDefault(path, new Response(404, "text/plain", "not found"));
+    }
     byte[] body = response.body.getBytes(StandardCharsets.UTF_8);
     exchange.getResponseHeaders().set("Content-Type", response.contentType);
     exchange.getResponseHeaders().set("Cache-Control", "no-store");
+    // headers added with withHeader replace the defaults of the same name (e.g. a cacheable Cache-Control)
+    Set<String> replaced = new HashSet<>();
+    for (String[] header : response.headers) {
+      if (replaced.add(header[0].toLowerCase(Locale.ROOT))) {
+        exchange.getResponseHeaders().remove(header[0]);
+      }
+      exchange.getResponseHeaders().add(header[0], header[1]);
+    }
     exchange.sendResponseHeaders(response.status, body.length == 0 ? -1 : body.length);
     try (OutputStream out = exchange.getResponseBody()) {
       out.write(body);
@@ -82,6 +127,7 @@ public class StubHttpServer implements AutoCloseable {
     private final int status;
     private final String contentType;
     private final String body;
+    private final List<String[]> headers = new CopyOnWriteArrayList<>();
 
     private Response(final int status, final String contentType, final String body) {
       this.status = status;
@@ -92,15 +138,22 @@ public class StubHttpServer implements AutoCloseable {
 
   public static final class RecordedRequest {
     private final String path;
+    private final String uri;
     private final Headers headers;
 
-    private RecordedRequest(final String path, final Headers headers) {
+    private RecordedRequest(final String path, final String uri, final Headers headers) {
       this.path = path;
+      this.uri = uri;
       this.headers = headers;
     }
 
     public String path() {
       return path;
+    }
+
+    /** The path plus the raw (still encoded) query string, e.g. {@code /api?page=2}. */
+    public String uri() {
+      return uri;
     }
 
     /** First value of the header, or {@code null} when the request did not carry it. */
