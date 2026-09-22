@@ -237,7 +237,7 @@ class BuildFormJenkinsTest {
   @Test
   void buildClickedWhileLoadingIsNotSubmitted(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = listStub("[\"v1.0\", \"v1.1\"]")) {
-      stub.withDelay("/list", Duration.ofSeconds(4));
+      stub.withDelay("/list", Duration.ofSeconds(10));
       FreeStyleProject project = project(r, single(stub, "p", 0, "v1.1"));
       HtmlPage page = BuildForms.openWithoutWaiting(r.createWebClient(), project);
       page.getWebClient().waitForBackgroundJavaScript(200);
@@ -290,19 +290,18 @@ class BuildFormJenkinsTest {
   void slowParameterDoesNotDelayTheOthers(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = new StubHttpServer()) {
       stub.respondJson("/fast", "[\"f1\", \"f2\"]");
-      stub.respondJson("/slow", "[\"s1\"]").withDelay("/slow", Duration.ofSeconds(5));
+      stub.respondJson("/slow", "[\"s1\"]").withDelay("/slow", Duration.ofSeconds(10));
       RestListParameterDefinition fast = new RestListParameterDefinition(
         "fast", "d", stub.url("/fast"), "", MimeType.APPLICATION_JSON, "$.*", "$", ValueOrder.NONE, ".*", 0, "", false);
       RestListParameterDefinition slow = new RestListParameterDefinition(
         "slow", "d", stub.url("/slow"), "", MimeType.APPLICATION_JSON, "$.*", "$", ValueOrder.NONE, ".*", 0, "", false);
       FreeStyleProject project = project(r, slow, fast);
 
-      long start = System.nanoTime();
       HtmlPage page = BuildForms.openWithoutWaiting(r.createWebClient(), project);
-      long pageMillis = Duration.ofNanos(System.nanoTime() - start).toMillis();
-      assertTrue(pageMillis < 4000, "the page waited for an endpoint: " + pageMillis + " ms");
-      assertEquals("loading", parameter(page, "slow").getAttribute("data-rlp-state"));
-      assertEquals("loading", parameter(page, "fast").getAttribute("data-rlp-state"));
+
+      // the page is there while the slow endpoint has not answered yet, without timing the page load itself
+      assertEquals("loading", parameter(page, "slow").getAttribute("data-rlp-state"),
+        "the page waited for the slow endpoint");
 
       BuildForms.waitUntilLoaded(page);
       assertEquals(List.of("f1", "f2"), texts(((HtmlSelect) parameter(page, "fast").querySelector("select")).getOptions()));
@@ -316,7 +315,7 @@ class BuildFormJenkinsTest {
   void slowLoadDoesNotHoldUpAnotherLoadOnTheServer(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = new StubHttpServer()) {
       stub.respondJson("/fast", "[\"f1\"]");
-      stub.respondJson("/slow", "[\"s1\"]").withDelay("/slow", Duration.ofSeconds(5));
+      stub.respondJson("/slow", "[\"s1\"]").withDelay("/slow", Duration.ofSeconds(10));
       FreeStyleProject project = r.createFreeStyleProject();
       ValueLoader slow = new RestListParameterDefinition(
         "slow", "d", stub.url("/slow"), "", MimeType.APPLICATION_JSON, "$.*", "$", ValueOrder.NONE, ".*", 0, "", false)
@@ -327,19 +326,16 @@ class BuildFormJenkinsTest {
       java.util.concurrent.ExecutorService executor = java.util.concurrent.Executors.newFixedThreadPool(2);
       try {
         java.util.concurrent.Future<net.sf.json.JSONObject> slowResult = executor.submit(() -> slow.load(false));
-        long deadline = System.nanoTime() + Duration.ofSeconds(2).toNanos();
+        long deadline = System.nanoTime() + Duration.ofSeconds(5).toNanos();
         while (stub.requestCount("/slow") == 0 && System.nanoTime() < deadline) {
           Thread.sleep(20);
         }
         assertEquals(1, stub.requestCount("/slow"), "the slow load has started");
 
-        long start = System.nanoTime();
         net.sf.json.JSONObject fastResult = executor.submit(() -> fast.load(false)).get();
-        long fastMillis = Duration.ofNanos(System.nanoTime() - start).toMillis();
 
         assertEquals("ok", fastResult.getString("status"));
-        assertTrue(fastMillis < 2500, "the fast load waited for the slow one: " + fastMillis + " ms");
-        assertFalse(slowResult.isDone(), "the slow load is still in flight");
+        assertFalse(slowResult.isDone(), "the fast load waited for the slow one");
         assertEquals("ok", slowResult.get().getString("status"));
       }
       finally {
