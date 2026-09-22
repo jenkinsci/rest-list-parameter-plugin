@@ -92,11 +92,12 @@ class PaginationPipelineJenkinsTest {
       "  }\n" +
       "}\n" +
       "def values = p.values.collect { it.value }\n" +
-      "echo \"error: ${p.errorMsg}\"\n" +
+      "echo \"error: [${p.errorMsg}]\"\n" +
       "echo \"count: ${values.size()}\"\n" +
       "echo \"values: ${values}\"\n", false));
     WorkflowRun run = r.buildAndAssertSuccess(job);
-    r.assertLogContains("error: \n", run);
+    // bracketed, since the log's line separator differs between platforms
+    r.assertLogContains("error: []", run);
     return run;
   }
 
