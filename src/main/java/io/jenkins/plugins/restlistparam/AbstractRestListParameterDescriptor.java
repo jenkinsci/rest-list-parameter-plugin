@@ -161,14 +161,9 @@ public abstract class AbstractRestListParameterDescriptor extends ParameterDescr
       context.checkPermission(Item.CONFIGURE);
     }
 
-    if (restEndpoint == null || restEndpoint.trim().isEmpty()) {
-      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
-    }
-    if (mimeType == null) {
-      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_UnknownMime());
-    }
-    if (valueExpression == null || valueExpression.isBlank()) {
-      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
+    FormValidation missing = checkRequiredTestFields(restEndpoint, mimeType, valueExpression);
+    if (missing != null) {
+      return missing;
     }
     JSONObject paginationSettings = parsePaginationSettings(paginationJson);
     Pagination pagination = toPagination(paginationSettings);
@@ -195,16 +190,45 @@ public abstract class AbstractRestListParameterDescriptor extends ParameterDescr
       CustomHeader.resolveAll(parseCustomHeaders(customHeadersJson), context),
       pagination);
 
+    return toTestResult(container, pagination != null);
+  }
+
+  /**
+   * @return The error for the first missing required Test Configuration field, or {@code null} when all are set
+   */
+  private static FormValidation checkRequiredTestFields(final String restEndpoint,
+                                                        final MimeType mimeType,
+                                                        final String valueExpression)
+  {
+    if (restEndpoint == null || restEndpoint.trim().isEmpty()) {
+      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_EndpointEmpty());
+    }
+    if (mimeType == null) {
+      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_UnknownMime());
+    }
+    if (valueExpression == null || valueExpression.isBlank()) {
+      return FormValidation.error(Messages.RLP_DescriptorImpl_ValidationErr_ExpressionEmpty());
+    }
+    return null;
+  }
+
+  /**
+   * Reports a Test Configuration fetch: the error, or the number of values and the first display value, plus the
+   * pages fetched when paginated. Reaching the page limit is a warning.
+   */
+  private static FormValidation toTestResult(final ResultContainer<List<ValueItem>> container,
+                                             final boolean paginated)
+  {
     Optional<String> errorMsg = container.getErrorMsg();
-    List<ValueItem> values = container.getValue();
     if (errorMsg.isPresent()) {
       return FormValidation.error(errorMsg.get());
     }
 
     // values should NEVER be empty here
     // due to all the filtering and error handling done in the RestValueService
+    List<ValueItem> values = container.getValue();
     String first = values.get(0).getDisplayValue();
-    if (pagination == null) {
+    if (!paginated) {
       return FormValidation.ok(Messages.RLP_DescriptorImpl_ValidationOk_ConfigValid(values.size(), first));
     }
     if (container.isPageLimitReached()) {

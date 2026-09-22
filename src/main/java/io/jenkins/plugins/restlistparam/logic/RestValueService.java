@@ -142,11 +142,7 @@ public class RestValueService {
       }
     }
 
-    List<ValueItem> items = new ArrayList<>();
-    String noValuesMsg = null;
-    Set<HttpUrl> visitedUrls = new HashSet<>();
-    Set<String> usedTokens = new HashSet<>();
-    HttpUrl endpointUrl = null;
+    FetchedPages pages = new FetchedPages();
     String url = restEndpoint;
     int page = 1;
 
@@ -159,67 +155,116 @@ public class RestValueService {
       }
       PageResponse response = fetched.getValue();
 
-      ResultContainer<List<ValueItem>> pageValues = convertToValuesList(mimeType, response.getBody(), valueExpression,
-        displayExpression);
-      if (pageValues.isNoValues()) {
-        // an empty page is fine, only an empty combined result counts as "no values"
-        noValuesMsg = pageValues.getErrorMsg().orElse(null);
-      }
-      else if (pageValues.getErrorMsg().isPresent()) {
-        container.setErrorMsg(onPage(pageValues.getErrorMsg().get(), page));
+      Optional<String> extractionError = pages.add(convertToValuesList(mimeType, response.getBody(), valueExpression,
+        displayExpression));
+      if (extractionError.isPresent()) {
+        container.setErrorMsg(onPage(extractionError.get(), page));
         return container;
-      }
-      else {
-        items.addAll(pageValues.getValue());
       }
       container.setPagesFetched(page);
 
       if (pagination == null) {
         break;
       }
-      if (endpointUrl == null) {
-        // the first request succeeded, so the endpoint is a valid URL
-        endpointUrl = HttpUrl.get(restEndpoint);
-      }
-      visitedUrls.add(HttpUrl.get(url));
-
-      Optional<Pagination.NextPage> next = pagination.next(new Pagination.Page(endpointUrl, response.getRequestUrl(),
-        response.getHeaders(), response.getBody()));
-      if (!next.isPresent()) {
-        break;
-      }
-      HttpUrl nextUrl = next.get().getUrl();
-      String token = next.get().getToken();
-      // checked before the page limit, so a foreign link on the last allowed page is still reported
-      if (!isSameOrigin(endpointUrl, nextUrl)) {
-        String origin = nextUrl.scheme() + "://" + nextUrl.host() + ":" + nextUrl.port();
-        log.warning(Messages.RLP_RestValueService_err_ForeignOrigin(origin));
-        container.setErrorMsg(Messages.RLP_RestValueService_err_ForeignOrigin(origin));
+      ResultContainer<HttpUrl> next = nextPage(pagination, restEndpoint, url, response, page, pages);
+      if (next.getErrorMsg().isPresent()) {
+        container.setErrorMsg(next.getErrorMsg().get());
         return container;
       }
-      if (visitedUrls.contains(nextUrl) || (token != null && usedTokens.contains(token))) {
-        log.warning(Messages.RLP_RestValueService_warn_RepeatedPage(page));
+      container.setPageLimitReached(next.isPageLimitReached());
+      if (next.getValue() == null) {
         break;
       }
-      if (page >= pagination.getEffectiveMaxPages()) {
-        log.warning(Messages.RLP_RestValueService_warn_PageLimitReached(page));
-        container.setPageLimitReached(true);
-        break;
-      }
-      if (token != null) {
-        usedTokens.add(token);
-      }
-      url = nextUrl.toString();
+      url = next.getValue().toString();
       ++page;
     }
 
-    if (items.isEmpty() && noValuesMsg != null) {
-      container.setNoValues(noValuesMsg);
+    return pages.toResult(container);
+  }
+
+  /**
+   * Decides where pagination continues after {@code page}, applying the origin, loop and page limit guards.
+   *
+   * @param restEndpoint The configured REST endpoint (the first request succeeded, so it is a valid URL)
+   * @param url          The URL requested for {@code page}
+   * @return The next URL; {@code null} when pagination ends (flagged when it ended at the page limit);
+   * or an error when the next page is on another origin
+   */
+  private static ResultContainer<HttpUrl> nextPage(final Pagination pagination,
+                                                   final String restEndpoint,
+                                                   final String url,
+                                                   final PageResponse response,
+                                                   final int page,
+                                                   final FetchedPages pages)
+  {
+    ResultContainer<HttpUrl> result = new ResultContainer<>(null);
+    HttpUrl endpointUrl = HttpUrl.get(restEndpoint);
+    pages.visitedUrls.add(HttpUrl.get(url));
+
+    Optional<Pagination.NextPage> next = pagination.next(new Pagination.Page(endpointUrl, response.getRequestUrl(),
+      response.getHeaders(), response.getBody()));
+    if (!next.isPresent()) {
+      return result;
+    }
+    HttpUrl nextUrl = next.get().getUrl();
+    String token = next.get().getToken();
+    // checked before the page limit, so a foreign link on the last allowed page is still reported
+    if (!isSameOrigin(endpointUrl, nextUrl)) {
+      String origin = nextUrl.scheme() + "://" + nextUrl.host() + ":" + nextUrl.port();
+      log.warning(Messages.RLP_RestValueService_err_ForeignOrigin(origin));
+      result.setErrorMsg(Messages.RLP_RestValueService_err_ForeignOrigin(origin));
+    }
+    else if (pages.visitedUrls.contains(nextUrl) || (token != null && pages.usedTokens.contains(token))) {
+      log.warning(Messages.RLP_RestValueService_warn_RepeatedPage(page));
+    }
+    else if (page >= pagination.getEffectiveMaxPages()) {
+      log.warning(Messages.RLP_RestValueService_warn_PageLimitReached(page));
+      result.setPageLimitReached(true);
     }
     else {
-      container.setValue(items);
+      if (token != null) {
+        pages.usedTokens.add(token);
+      }
+      result.setValue(nextUrl);
     }
-    return container;
+    return result;
+  }
+
+  /**
+   * The entries collected so far during one fetch, and the URLs and tokens already used.
+   */
+  private static final class FetchedPages {
+    private final List<ValueItem> items = new ArrayList<>();
+    private final Set<HttpUrl> visitedUrls = new HashSet<>();
+    private final Set<String> usedTokens = new HashSet<>();
+    private String noValuesMsg;
+
+    /**
+     * Adds a page's entries. A page without entries is fine; only an empty combined result counts as "no values".
+     *
+     * @return The page's extraction error, if any
+     */
+    Optional<String> add(final ResultContainer<List<ValueItem>> pageValues) {
+      if (pageValues.isNoValues()) {
+        noValuesMsg = pageValues.getErrorMsg().orElse(null);
+        return Optional.empty();
+      }
+      if (pageValues.getErrorMsg().isPresent()) {
+        return pageValues.getErrorMsg();
+      }
+      items.addAll(pageValues.getValue());
+      return Optional.empty();
+    }
+
+    ResultContainer<List<ValueItem>> toResult(final ResultContainer<List<ValueItem>> container) {
+      if (items.isEmpty() && noValuesMsg != null) {
+        container.setNoValues(noValuesMsg);
+      }
+      else {
+        container.setValue(items);
+      }
+      return container;
+    }
   }
 
   private static boolean isSameOrigin(final HttpUrl endpoint, final HttpUrl other) {
