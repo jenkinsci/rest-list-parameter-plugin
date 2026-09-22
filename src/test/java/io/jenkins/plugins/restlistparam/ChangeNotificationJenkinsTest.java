@@ -9,7 +9,7 @@ import net.sf.json.JSONArray;
 import org.htmlunit.html.DomElement;
 import org.htmlunit.html.DomNode;
 import org.htmlunit.html.HtmlElement;
-import org.htmlunit.html.HtmlInput;
+import org.htmlunit.html.HtmlSelect;
 import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -137,10 +137,10 @@ class ChangeNotificationJenkinsTest {
     }
   }
 
-  // Free text
+  // Custom values (validation disabled)
 
   @Test
-  void freeTextDefaultResolvedToAnotherValueNotifies(JenkinsRule r) throws Exception {
+  void customDefaultResolvedToAnotherValueNotifies(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = listStub("[{\"name\":\"Alpha\"},{\"name\":\"Beta\"}]")) {
       RestListParameterDefinition def = new RestListParameterDefinition(
         "p", "d", stub.url("/list"), "", MimeType.APPLICATION_JSON, "$.*", "$.name", ValueOrder.NONE, ".*", 0,
@@ -155,7 +155,7 @@ class ChangeNotificationJenkinsTest {
   }
 
   @Test
-  void freeTextDefaultResolvedToItselfDoesNotNotify(JenkinsRule r) throws Exception {
+  void customDefaultResolvedToItselfDoesNotNotify(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = listStub("[\"v1\", \"v2\"]")) {
       RestListParameterDefinition def = single(stub, "p", "v2");
       def.setEnableValidation(false);
@@ -168,24 +168,23 @@ class ChangeNotificationJenkinsTest {
   }
 
   @Test
-  void freeTextTypedByTheUserSurvivesRefreshWithoutNotifying(JenkinsRule r) throws Exception {
+  void customValuePickedByTheUserSurvivesRefreshWithoutNotifying(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = listStub("[\"v1\", \"v2\"]")) {
       RestListParameterDefinition def = single(stub, "p", "v2");
       def.setEnableValidation(false);
       FreeStyleProject project = project(r, def);
       HtmlPage page = openRecording(r, project, true);
-      HtmlInput input = parameter(page, "p").querySelector("input[name=value]");
-      input.type("x");
-      // leaving the input fires the user's own change event before the refresh
-      input.blur();
-      String typedValue = input.getValue();
-      List<String> typed = changes(page);
+      // the user's own pick is recorded here as select2 fires it, whatever the refresh adds must be nothing
+      BuildForms.pickCustomValue(page, "p", "my-branch");
+      List<String> picked = changes(page);
       stub.respondJson("/list", "[\"v3\"]");
 
       refresh(page, "p");
 
-      assertEquals(typedValue, input.getValue());
-      assertEquals(typed, changes(page));
+      HtmlSelect select = (HtmlSelect) parameter(page, "p").querySelector("select");
+      assertEquals(List.of("my-branch"), select.getSelectedOptions().stream()
+        .map(option -> option.getText().trim()).toList());
+      assertEquals(picked, changes(page));
     }
   }
 

@@ -16,7 +16,9 @@ import org.htmlunit.html.DomElement;
 import org.htmlunit.html.HtmlElement;
 import org.htmlunit.html.HtmlForm;
 import org.htmlunit.html.HtmlInput;
+import org.htmlunit.html.HtmlOption;
 import org.htmlunit.html.HtmlPage;
+import org.htmlunit.html.HtmlSelect;
 import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl;
 import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -27,6 +29,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WithJenkins
@@ -97,10 +100,10 @@ class ValueResolutionJenkinsTest {
     }
   }
 
-  // Free-text prefill (build-parameter-form)
+  // Custom-value dropdown (build-parameter-form)
 
   @Test
-  void freeTextInputIsPrefilledWithMatchingEntryValue(JenkinsRule r) throws Exception {
+  void customDropdownPreselectsTheMatchingEntryValue(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = new StubHttpServer()) {
       stub.respondJson("/tags", TAGS_JSON);
       RestListParameterDefinition def = new RestListParameterDefinition(
@@ -112,15 +115,14 @@ class ValueResolutionJenkinsTest {
 
       HtmlPage page = BuildForms.open(r, project);
 
-      HtmlInput input = page.querySelector("input[name=value]");
-      assertNotNull(input, "free-text input not rendered");
-      String prefill = input.getValue();
-      assertEquals("v10.7.7", JsonPath.read(prefill, "$.name"));
-      DomElement option = page.querySelector("datalist option");
-      assertNotNull(option);
-      boolean matchesSuggestion = page.querySelectorAll("datalist option").stream()
-        .anyMatch(node -> prefill.equals(((DomElement) node).getAttribute("value")));
-      assertTrue(matchesSuggestion, "prefill should be the value the dropdown would submit");
+      HtmlSelect select = page.querySelector("select[name=value]");
+      assertNotNull(select, "dropdown not rendered");
+      assertNull(page.querySelector("input[name=value]"), "no free-text input");
+      List<HtmlOption> selected = select.getSelectedOptions();
+      assertEquals(1, selected.size());
+      String value = selected.get(0).getValueAttribute();
+      assertEquals("v10.7.7", JsonPath.read(value, "$.name"));
+      assertEquals("v10.7.7", selected.get(0).getText().trim(), "the entry is shown by its display value");
       assertEquals(1, stub.requestCount("/tags"), "the form should fetch once per load");
     }
   }

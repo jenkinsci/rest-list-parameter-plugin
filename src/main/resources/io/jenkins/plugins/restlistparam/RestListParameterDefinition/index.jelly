@@ -12,37 +12,29 @@
   <!-- the entries are not fetched while rendering; loader.js requests them through this bound object -->
   <st:bind var="rlpLoader_${id}" value="${it.createLoader()}"/>
 
-  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
-  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-theming-patch.css"/>
+  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-jenkins.css"/>
 
   <j:set var="escapeEntryTitleAndDescription" value="false"/>
   <f:entry title="${h.escape(it.name)}" description="${it.formattedDescription}">
     <!-- this div is required because of ParametersDefinitionProperty.java#117 -->
     <div name="parameter" description="${it.description}"
          data-rlp-id="${id}" data-rlp-loader="rlpLoader_${id}" data-rlp-state="loading"
-         data-rlp-mode="${it.enableValidation ? 'select' : 'freetext'}"
+         data-rlp-mode="${it.enableValidation ? 'select' : 'custom'}"
          data-rlp-timeout="${it.descriptor.fetchTimeout}">
       <input type="hidden" name="name" value="${it.name}"/>
 
-      <j:choose>
-        <j:when test="${!it.enableValidation}">
-          <!-- Validation disabled: render a free-text input backed by a datalist
-               of fetched values. Users can pick from suggestions or type any
-               value (helpful when paginated APIs do not surface what they need;
-               see jenkinsci/rest-list-parameter-plugin#61 and #86). The default is
-               shown verbatim until the entries arrive. -->
-          <input id="${id}-input" type="text" class="setting-input" name="value"
-                 value="${it.defaultValue}" list="${id}-datalist" autocomplete="off"/>
-          <datalist id="${id}-datalist"/>
-        </j:when>
-        <j:otherwise>
-          <select id="${id}-select" data-select2-id="${id}-select" data-allow-empty-value="${it.allowEmptyValue}" class="setting-input" name="value">
-            <j:if test="${it.allowEmptyValue}">
-              <option value="" data-rlp-empty="true" selected="${empty it.defaultValue ? 'selected' : null}">&#8212;</option>
-            </j:if>
-          </select>
-        </j:otherwise>
-      </j:choose>
+      <!-- Both modes render the same dropdown. With validation disabled the user may also type a value that is
+           not among the entries (loader.js offers it as the custom value); the default is shown as a custom
+           option until the entries arrive, as the free-text input showed it before. -->
+      <select id="${id}-select" data-select2-id="${id}-select" data-allow-empty-value="${it.allowEmptyValue}"
+              data-custom-label="${it.customValueLabel}" class="setting-input" name="value">
+        <j:if test="${it.allowEmptyValue}">
+          <option value="" data-rlp-empty="true" selected="${empty it.defaultValue ? 'selected' : null}">&#8212;</option>
+        </j:if>
+        <j:if test="${!it.enableValidation and !empty it.defaultValue}">
+          <option value="${it.defaultValue}" data-rlp-custom="true" selected="selected">${it.defaultValue}</option>
+        </j:if>
+      </select>
 
       <st:include page="loaderControls.jelly" class="io.jenkins.plugins.restlistparam.RestListParameterDefinition"/>
 

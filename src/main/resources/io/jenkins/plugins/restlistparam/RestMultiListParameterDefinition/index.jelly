@@ -11,8 +11,7 @@
   <!-- the entries are not fetched while rendering; loader.js requests them through this bound object -->
   <st:bind var="rlpLoader_${id}" value="${it.createLoader()}"/>
 
-  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
-  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-theming-patch.css"/>
+  <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-jenkins.css"/>
 
   <j:set var="escapeEntryTitleAndDescription" value="false"/>
   <f:entry title="${h.escape(it.name)}" description="${it.formattedDescription}">
@@ -26,7 +25,7 @@
            in the order the options are listed. With validation disabled, Select2 tags mode lets the user
            add entries that are not listed (see jenkinsci/rest-list-parameter-plugin#61 and #86). -->
       <select id="${id}-select" data-select2-id="${id}-select" data-multiple="true" data-tags="${!it.enableValidation}"
-              class="setting-input" name="value" multiple="multiple"/>
+              data-custom-label="${it.customValueLabel}" class="setting-input" name="value" multiple="multiple"/>
 
       <st:include page="loaderControls.jelly" class="io.jenkins.plugins.restlistparam.RestListParameterDefinition"/>
 

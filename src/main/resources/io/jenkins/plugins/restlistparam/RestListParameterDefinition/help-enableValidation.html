@@ -1,13 +1,14 @@
 <div>
-  When checked (the default), submitted values must match one of the entries returned by the
-  REST endpoint and the build form renders a strict dropdown.
+  When checked (the default), the build form offers only the entries returned by the REST endpoint, and a
+  submitted value must match one of them. The endpoint is contacted again when the build is submitted.
   <p>
-    Uncheck it to render a free-text input backed by a datalist of the fetched values: the user
-    can still pick a suggestion, but is also allowed to type or paste any value, and the build
-    will not reject it. This is a partial workaround for paginated REST APIs whose desired
-    value falls outside the first page returned to the plugin
-    (see <a href="https://github.com/jenkinsci/rest-list-parameter-plugin/issues/61">#61</a>
-    and <a href="https://github.com/jenkinsci/rest-list-parameter-plugin/issues/86">#86</a>).
+    Uncheck it to let the user pick a value that is not among the entries: typing into the dropdown's search
+    field offers the typed text as <b>Use "&lt;text&gt;"</b>, and picking it submits the text verbatim. Any
+    non-empty value is then accepted, and the endpoint is not contacted at submission.
+  </p>
+  <p>
+    This helps when builds must keep running while the endpoint is unavailable, and when a value the endpoint
+    does not (yet) return should be passed by a trigger, the remote API or the build form.
   </p>
   <p>
     This option only relaxes validation for <em>non-empty</em> values. Whether an empty

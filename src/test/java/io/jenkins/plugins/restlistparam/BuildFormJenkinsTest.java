@@ -10,6 +10,7 @@ import io.jenkins.plugins.restlistparam.model.ValueOrder;
 import org.htmlunit.html.DomElement;
 import org.htmlunit.html.DomNode;
 import org.htmlunit.html.HtmlElement;
+import org.htmlunit.html.HtmlInput;
 import org.htmlunit.html.HtmlOption;
 import org.htmlunit.html.HtmlPage;
 import org.htmlunit.html.HtmlSelect;
@@ -92,6 +93,40 @@ class BuildFormJenkinsTest {
     }
   }
 
+  // Search field threshold
+
+  @Test
+  void shortDropdownIsOpenedWithoutASearchField(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub(entriesJson(3))) {
+      FreeStyleProject project = project(r, single(stub, "p", 0, ""));
+      HtmlPage page = BuildForms.open(r, project);
+
+      BuildForms.openDropdown(page, "p");
+
+      assertEquals(3, BuildForms.resultOptions(page).size());
+      assertTrue(BuildForms.searchContainer(page).getAttribute("class").contains("select2-search--hide"),
+        "a short list needs no search field");
+    }
+  }
+
+  @Test
+  void longDropdownOffersASearchFieldThatNarrowsTheOptions(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub(entriesJson(25))) {
+      FreeStyleProject project = project(r, single(stub, "p", 0, ""));
+      HtmlPage page = BuildForms.open(r, project);
+
+      BuildForms.openDropdown(page, "p");
+
+      assertEquals(25, BuildForms.resultOptions(page).size());
+      assertFalse(BuildForms.searchContainer(page).getAttribute("class").contains("select2-search--hide"),
+        "a long list is searched");
+      ((HtmlInput) BuildForms.searchContainer(page).querySelector("input")).type("v12");
+      BuildForms.waitUntil(page, "the options to be narrowed", () -> BuildForms.resultOptions(page).size() == 1);
+
+      assertEquals(List.of("v12"), BuildForms.resultOptions(page).stream().map(DomNode::asNormalizedText).toList());
+    }
+  }
+
   // Refresh action per parameter
 
   @Test
@@ -143,23 +178,147 @@ class BuildFormJenkinsTest {
   }
 
   @Test
-  void refreshKeepsTypedFreeText(JenkinsRule r) throws Exception {
+  void refreshKeepsThePickedCustomValue(JenkinsRule r) throws Exception {
     try (StubHttpServer stub = listStub("[\"v1.0\", \"v1.1\"]")) {
       RestListParameterDefinition def = single(stub, "p", 0, "v1.0");
       def.setEnableValidation(false);
       FreeStyleProject project = project(r, def);
       HtmlPage page = BuildForms.open(r, project);
-      org.htmlunit.html.HtmlInput input = parameter(page, "p").querySelector("input[name=value]");
-      assertEquals("v1.0", input.getValue());
-      input.setValue("custom");
+      HtmlSelect select = parameter(page, "p").querySelector("select");
+      assertEquals(List.of("v1.0"), texts(select.getSelectedOptions()));
+      BuildForms.pickCustomValue(page, "p", "custom");
       stub.respondJson("/list", "[\"v2.0\"]");
 
       refresh(page, "p");
 
-      assertEquals("custom", input.getValue());
-      List<String> suggestions = parameter(page, "p").querySelectorAll("datalist option").stream()
-        .map(node -> ((DomElement) node).getAttribute("value")).toList();
-      assertEquals(List.of("v2.0"), suggestions);
+      select = parameter(page, "p").querySelector("select");
+      assertEquals(List.of("v2.0", "custom"), texts(select.getOptions()));
+      assertEquals(List.of("custom"), texts(select.getSelectedOptions()));
+    }
+  }
+
+  // Custom values in the dropdown when validation is disabled
+
+  @Test
+  void defaultWithoutAMatchingEntryIsPreselectedAsACustomValue(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub(ENTRIES_JSON)) {
+      RestListParameterDefinition def = named(stub, "v0.9", false);
+      def.setEnableValidation(false);
+      FreeStyleProject project = project(r, def);
+
+      HtmlPage page = BuildForms.open(r, project);
+
+      HtmlSelect select = parameter(page, "p").querySelector("select");
+      assertEquals(List.of("Alpha", "Beta", "Gamma", "v0.9"), texts(select.getOptions()));
+      assertEquals(List.of("v0.9"), texts(select.getSelectedOptions()));
+      r.submit(page.getFormByName("parameters"));
+      r.waitUntilNoActivity();
+      assertEquals("v0.9", submitted(project, "p"));
+    }
+  }
+
+  @Test
+  void defaultIsShownWhileTheEntriesAreLoading(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub("[\"v1.0\"]")) {
+      stub.withDelay("/list", Duration.ofSeconds(10));
+      RestListParameterDefinition def = single(stub, "p", 0, "v1.0");
+      def.setEnableValidation(false);
+      FreeStyleProject project = project(r, def);
+
+      HtmlPage page = BuildForms.openWithoutWaiting(r.createWebClient(), project);
+      page.getWebClient().waitForBackgroundJavaScript(200);
+
+      assertEquals("loading", parameter(page, "p").getAttribute("data-rlp-state"));
+      HtmlSelect select = parameter(page, "p").querySelector("select");
+      assertEquals(List.of("v1.0"), texts(select.getSelectedOptions()));
+      assertEquals("true", select.getOptions().get(0).getAttribute("data-rlp-custom"));
+    }
+  }
+
+  @Test
+  void noFreeTextInputIsRendered(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub(ENTRIES_JSON)) {
+      RestListParameterDefinition def = named(stub, "", false);
+      def.setEnableValidation(false);
+      FreeStyleProject project = project(r, def);
+
+      DomElement parameter = parameter(BuildForms.open(r, project), "p");
+
+      assertNull(parameter.querySelector("input[name=value]"), "no free-text input");
+      assertNull(parameter.querySelector("datalist"), "no browser suggestion list");
+      assertNotNull(parameter.querySelector("select[name=value]"));
+    }
+  }
+
+  @Test
+  void typedValueIsOfferedPickedWithEnterAndSubmitted(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub("[\"v1.0\", \"v1.1\"]")) {
+      RestListParameterDefinition def = single(stub, "p", 0, "");
+      def.setEnableValidation(false);
+      FreeStyleProject project = project(r, def);
+      HtmlPage page = BuildForms.open(r, project);
+
+      HtmlInput search = BuildForms.typeInDropdown(page, "p", "v0.9");
+      assertNotNull(BuildForms.customOption(page, "v0.9"), "the typed value is offered as a custom value");
+      search.type('\n');
+      BuildForms.waitUntil(page, "the dropdown to close",
+        () -> page.querySelector(".select2-container--open") == null);
+
+      HtmlSelect select = parameter(page, "p").querySelector("select");
+      assertEquals(List.of("v0.9"), texts(select.getSelectedOptions()));
+      r.submit(page.getFormByName("parameters"));
+      r.waitUntilNoActivity();
+      assertEquals("v0.9", submitted(project, "p"));
+    }
+  }
+
+  @Test
+  void typingTheDisplayValueOfAnEntryOffersNoCustomOption(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub(ENTRIES_JSON)) {
+      RestListParameterDefinition def = named(stub, "", false);
+      def.setEnableValidation(false);
+      FreeStyleProject project = project(r, def);
+      HtmlPage page = BuildForms.open(r, project);
+
+      BuildForms.typeInDropdown(page, "p", "Beta");
+
+      assertNull(BuildForms.customOption(page, "Beta"), "the listed entry needs no custom value");
+      assertEquals(List.of("Beta"), BuildForms.resultOptions(page).stream().map(DomNode::asNormalizedText).toList());
+      BuildForms.pickShownOption(page, "Beta");
+      r.submit(page.getFormByName("parameters"));
+      r.waitUntilNoActivity();
+      assertEquals("{\"name\":\"Beta\",\"id\":2}", submitted(project, "p"));
+    }
+  }
+
+  @Test
+  void validationEnabledOffersNoCustomValue(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub(entriesJson(25))) {
+      FreeStyleProject project = project(r, single(stub, "p", 0, ""));
+      HtmlPage page = BuildForms.open(r, project);
+
+      BuildForms.typeInDropdown(page, "p", "v99");
+
+      assertNull(BuildForms.customOption(page, "v99"), "a strict dropdown offers only its entries");
+      assertTrue(BuildForms.resultOptions(page).stream().noneMatch(option -> option.asNormalizedText().contains("v99")),
+        "a strict dropdown offers only its entries");
+    }
+  }
+
+  @Test
+  void multiSubmitsAPickedEntryAndATypedOne(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = listStub(ENTRIES_JSON)) {
+      RestMultiListParameterDefinition def = multi(stub, "m", "");
+      def.setEnableValidation(false);
+      FreeStyleProject project = project(r, def);
+      HtmlPage page = BuildForms.open(r, project);
+
+      BuildForms.pickOption(page, "m", "Alpha");
+      BuildForms.pickCustomValue(page, "m", "my-branch");
+
+      r.submit(page.getFormByName("parameters"));
+      r.waitUntilNoActivity();
+      assertEquals(List.of("{\"name\":\"Alpha\",\"id\":1}", "my-branch"), submitted(project, "m"));
     }
   }
 
@@ -378,6 +537,12 @@ class BuildFormJenkinsTest {
     }
   }
 
+  /** A Json array of {@code count} values {@code v1} … {@code v<count>}. */
+  private static String entriesJson(final int count) {
+    return "[" + java.util.stream.IntStream.rangeClosed(1, count)
+      .mapToObj(index -> "\"v" + index + "\"").collect(java.util.stream.Collectors.joining(", ")) + "]";
+  }
+
   private static void refresh(final HtmlPage page, final String name) throws Exception {
     ((HtmlElement) parameter(page, name).querySelector(".rlp-refresh")).click();
     BuildForms.waitUntilLoaded(page);
@@ -390,13 +555,7 @@ class BuildFormJenkinsTest {
   }
 
   private static DomElement parameter(final HtmlPage page, final String name) {
-    for (DomNode node : page.querySelectorAll("div[name=parameter]")) {
-      DomNode hidden = node.querySelector("input[name=name]");
-      if (hidden != null && name.equals(((DomElement) hidden).getAttribute("value"))) {
-        return (DomElement) node;
-      }
-    }
-    throw new AssertionError("no parameter " + name);
+    return BuildForms.parameter(page, name);
   }
 
   private static HtmlElement submitButton(final HtmlPage page) {

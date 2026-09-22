@@ -1,0 +1,249 @@
+/*
+ * Select2 theme "jenkins": the REST parameters' dropdowns styled like Jenkins' own select (.jenkins-select) and
+ * dropdown menus, using Jenkins design tokens only so that every Jenkins theme applies. The base select2.css of the
+ * select2-api plugin provides the structure; this file covers what Select2's default theme would.
+ */
+
+.select2-container--jenkins {
+  --rlp-border-width: var(--jenkins-border-width, 2px);
+  --rlp-min-height: 38px;
+  --rlp-chevron: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 336 192'%3e%3cpath d='M7.03 7.03a24 24 0 0 1 33.94 0L168 134.06 295.03 7.03a24 24 0 0 1 33.94 33.94l-144 144a24 24 0 0 1-33.94 0l-144-144a24 24 0 0 1 0-33.94Z'/%3e%3c/svg%3e");
+
+  width: 100% !important;
+  color: var(--text-color);
+}
+
+/* Selection box, single and multiple */
+
+.select2-container--jenkins .select2-selection {
+  box-sizing: border-box;
+  min-height: var(--rlp-min-height);
+  border: var(--rlp-border-width) solid var(--input-border);
+  border-radius: var(--form-input-border-radius);
+  background-color: var(--input-color);
+  box-shadow: 0 0 0 10px transparent;
+  outline: none;
+  transition: var(--standard-transition);
+}
+
+.select2-container--jenkins .select2-selection:hover {
+  border-color: var(--input-border-hover);
+}
+
+.select2-container--jenkins.select2-container--focus .select2-selection,
+.select2-container--jenkins.select2-container--open .select2-selection {
+  border-color: var(--focus-input-border);
+  box-shadow: 0 0 0 5px var(--focus-input-glow);
+}
+
+.select2-container--jenkins .select2-selection--single {
+  display: flex;
+  align-items: center;
+  height: auto;
+}
+
+.select2-container--jenkins .select2-selection--single .select2-selection__rendered {
+  flex: 1;
+  padding: 0 calc(13px + 12px + 0.5rem) 0 var(--form-input-padding);
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.select2-container--jenkins .select2-selection__placeholder {
+  color: var(--text-color-secondary);
+}
+
+.select2-container--jenkins .select2-selection--single .select2-selection__clear {
+  margin-right: 0.25rem;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+}
+
+/* The chevron, drawn like .jenkins-select:after */
+.select2-container--jenkins .select2-selection--single .select2-selection__arrow {
+  position: absolute;
+  top: 0;
+  right: 13px;
+  bottom: 0;
+  width: 12px;
+  background-color: currentColor;
+  -webkit-mask-image: var(--rlp-chevron);
+  mask-image: var(--rlp-chevron);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  pointer-events: none;
+}
+
+.select2-container--jenkins .select2-selection--single .select2-selection__arrow b {
+  display: none;
+}
+
+.select2-container--jenkins .select2-selection--multiple {
+  cursor: text;
+}
+
+.select2-container--jenkins .select2-selection--multiple .select2-selection__rendered {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  box-sizing: border-box;
+  min-height: calc(var(--rlp-min-height) - 2 * var(--rlp-border-width));
+  margin: 0;
+  padding: 0.25rem calc(var(--form-input-padding) - 0.25rem);
+  list-style: none;
+}
+
+/* Chips of the multi-select */
+.select2-container--jenkins .select2-selection--multiple .select2-selection__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: calc(var(--form-input-border-radius) - 0.25rem);
+  background-color: var(--item-background--active);
+  color: var(--text-color);
+  line-height: 1.5;
+}
+
+.select2-container--jenkins .select2-selection--multiple .select2-selection__choice__remove {
+  order: 1;
+  color: var(--text-color-secondary);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.select2-container--jenkins .select2-selection--multiple .select2-selection__choice__remove:hover {
+  color: var(--text-color);
+}
+
+.select2-container--jenkins .select2-selection--multiple .select2-selection__clear {
+  margin-left: auto;
+  color: var(--text-color-secondary);
+  cursor: pointer;
+}
+
+.select2-container--jenkins .select2-selection--multiple .select2-search--inline {
+  flex: 1;
+}
+
+.select2-container--jenkins .select2-selection--multiple .select2-search--inline .select2-search__field {
+  min-width: 8ch;
+  margin: 0;
+  padding: 0.15rem 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  outline: none;
+  box-shadow: none;
+}
+
+/* Disabled while loading, and after a failed load */
+
+.select2-container--jenkins.select2-container--disabled .select2-selection {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* The open list: a floating panel, offset from the control, like Jenkins' dropdown menus */
+
+.select2-container--jenkins .select2-dropdown {
+  overflow: hidden;
+  border: none;
+  border-radius: 15px;
+  background: color-mix(in sRGB, var(--background) 85%, transparent);
+  -webkit-backdrop-filter: var(--dropdown-backdrop-filter);
+  backdrop-filter: var(--dropdown-backdrop-filter);
+  box-shadow: var(--dropdown-box-shadow);
+  color: var(--text-color);
+}
+
+.select2-container--jenkins .select2-dropdown--below {
+  margin-top: 0.5rem;
+}
+
+.select2-container--jenkins .select2-dropdown--above {
+  margin-top: -0.5rem;
+}
+
+.select2-container--jenkins .select2-search--dropdown {
+  padding: 0.4rem 0.4rem 0;
+}
+
+.select2-container--jenkins .select2-search--dropdown .select2-search__field {
+  box-sizing: border-box;
+  min-height: 34px;
+  padding: 0.35rem 0.6rem;
+  border: var(--rlp-border-width) solid var(--input-border);
+  border-radius: 0.66rem;
+  background-color: var(--input-color);
+  color: var(--text-color);
+  outline: none;
+  transition: var(--standard-transition);
+}
+
+.select2-container--jenkins .select2-search--dropdown .select2-search__field:hover {
+  border-color: var(--input-border-hover);
+}
+
+.select2-container--jenkins .select2-search--dropdown .select2-search__field:focus {
+  border-color: var(--focus-input-border);
+  box-shadow: 0 0 0 5px var(--focus-input-glow);
+}
+
+.select2-container--jenkins .select2-results > .select2-results__options {
+  max-height: min(20rem, 60vh);
+  padding: 0.4rem;
+  overflow-y: auto;
+}
+
+/* Options, marked like .jenkins-dropdown__item */
+
+.select2-container--jenkins .select2-results__option {
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.66rem;
+  color: var(--text-color);
+  font-weight: 450;
+  line-height: 1.5;
+  user-select: none;
+}
+
+.select2-container--jenkins .select2-results__option[aria-selected="true"] {
+  background-color: var(--item-background--active);
+}
+
+.select2-container--jenkins .select2-results__option--highlighted[aria-selected] {
+  background-color: var(--item-background--hover);
+  color: var(--text-color);
+}
+
+.select2-container--jenkins .select2-results__option--highlighted[aria-selected="true"] {
+  background-color: var(--item-background--active);
+}
+
+.select2-container--jenkins .select2-results__option[aria-disabled="true"] {
+  color: var(--text-color-secondary);
+}
+
+.select2-container--jenkins .select2-results__option[role="group"] {
+  padding: 0;
+}
+
+.select2-container--jenkins .select2-results__group {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  color: var(--text-color-secondary);
+  font-weight: 600;
+}
+
+.select2-container--jenkins .select2-results__message {
+  color: var(--text-color-secondary);
+}

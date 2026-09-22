@@ -196,6 +196,14 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
   }
 
   /**
+   * @return The label of the option the build form offers for a typed value, with {@code {0}} where the typed text
+   * goes; loader.js fills it in
+   */
+  public String getCustomValueLabel() {
+    return Messages.RLP_BuildForm_CustomValue("{0}");
+  }
+
+  /**
    * Returns this parameter's entries, from the value cache while they are fresh, fetching them otherwise.
    * Credentials are resolved against the job of the current Stapler request, if any.
    *
