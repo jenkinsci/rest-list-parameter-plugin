@@ -72,8 +72,9 @@ public final class RestListParameterDefinition extends AbstractRestListParameter
   }
 
   /**
-   * The prefill for the free-text input (validation disabled). The default value refers to a display value,
-   * as in dropdown mode, so it resolves to the value of the first entry displayed as the default.
+   * The value the dropdown preselects with validation disabled. The default value refers to a display value,
+   * as in dropdown mode, so it resolves to the value of the first entry displayed as the default; a default
+   * that matches no entry stays verbatim and becomes a custom value.
    *
    * @param values The entries already fetched for this form
    * @return The matching entry's value, otherwise the default value verbatim

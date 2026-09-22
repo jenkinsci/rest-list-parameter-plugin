@@ -252,14 +252,15 @@ image::.media/configuration-test_error2.png[Faild Configuiration Validation (due
 
 The `Build with Parameters` page opens without waiting for any endpoint.
 Each `REST List Parameter` and `REST Multi List Parameter` shows a loading indicator and requests its values on its own, so a slow endpoint only delays its own parameter.
-Once the values arrive, the parameter shows them with the usual dropdown, free-text or multi-select behaviour and default preselection.
+Once the values arrive, the parameter shows them in its dropdown or multi-select, with the usual default preselection.
 
 * While any parameter is still loading, the form is not submitted; clicking `Build` shows `Values are still loading` beneath the parameters still loading.
 A parameter whose load failed does not block the form: the submitted value is validated as usual.
 * A failed load shows its error beneath the parameter with a `Retry` action.
 Users who can configure the job also see the endpoint URL (without query string and user info), the page that failed, the HTTP status or exception type and the duration; response bodies and secrets are never shown.
 * The refresh button next to each parameter loads its values again, bypassing all caches.
-The selected entry stays selected if it is still offered, typed free text is kept, and free-form entries of a multi-select are kept.
+The selected entry stays selected if it is still offered, and custom values picked with validation disabled are kept, in the dropdown as in a multi-select.
+* With `Enable Value Validation` unchecked, a `REST List Parameter` also accepts a value that is not among the entries: type it into the dropdown's search field and pick `Use "<text>"`, and it is submitted verbatim.
 * Loading the values requires the Build permission on the job.
 In a Pipeline `input` step, users without Build on the job cannot load the values.
 * The values are shown by JavaScript, as Select2 already required.
@@ -487,8 +488,8 @@ With `Enable Value Validation` checked (the default), every element must be the 
 The list is accepted from the link:#valueCaching[cached values] when they are fresh and contain every element; otherwise the entries are fetched once when the build is submitted and every element is checked against them.
 If that fetch fails, any non-empty list is rejected.
 
-With it unchecked, the user can also type entries that are not in the list; each one is submitted verbatim as its own element, and the endpoint is not contacted to validate the submission.
-This helps with paginated APIs whose wanted value is not on the first page.
+With it unchecked, the user can also add entries that are not in the list: typing into the multi-select offers the typed text as `Use "<text>"`, and picking it adds the text verbatim as its own element.
+The endpoint is then not contacted to validate the submission, which helps while it is unavailable and for values it does not (yet) return.
 
 An empty list is accepted only when `Allow Empty Value` is checked.
 Empty elements are always rejected.
@@ -497,7 +498,7 @@ A rejected value stops the build with `Illegal value for parameter <name>: <deta
 ==== Default value
 
 The default value refers to entries by their display value and is read with the same string rule: `["Alpha","Gamma"]` preselects two entries, and `Beta` preselects one.
-Default values that match no entry are ignored when validation is enabled; when it is disabled, they are preselected as free-form entries.
+Default values that match no entry are ignored when validation is enabled; when it is disabled, they are preselected as custom entries.
 When a build is re-run, the previous selection becomes the new form's default.
 
 ==== Known plugin interactions
@@ -542,17 +543,9 @@ Just if the badge from `shields.io` and the link:LICENSE[] file do not make it o
 [#bundled-project-sources]
 == Bundled Project Sources
 
-NOTE: Bundled as of v1.3.x, updated as of v1.4.x
+NOTE: The vendored Select2-Bootstrap4-Theme was removed; the dropdowns are styled with the plugin's own Select2 theme, built on the Jenkins design tokens.
 
-[cols="1,^0,^0,2"]
-|===
-|Project |Version |Licence |Description
-
-|link:https://github.com/ttskch/select2-bootstrap4-theme[Select2-Bootstrap4-Theme]
-|`v1.5.2`
-|link:https://github.com/ttskch/select2-bootstrap4-theme/blob/1.5.2/LICENSE[MIT]
-|A CSS theme for Select2, when used in Bootstrap4 apps
-|===
+No third-party sources are bundled with this plugin.
 
 [#development]
 == Development

@@ -2,12 +2,18 @@ package io.jenkins.plugins.restlistparam;
 
 import hudson.model.Job;
 import org.htmlunit.AjaxController;
+import org.htmlunit.html.DomElement;
+import org.htmlunit.html.DomNode;
+import org.htmlunit.html.HtmlElement;
+import org.htmlunit.html.HtmlInput;
 import org.htmlunit.html.HtmlPage;
 import org.jvnet.hudson.test.JenkinsRule;
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -46,6 +52,95 @@ public final class BuildForms {
 
   public static HtmlPage waitUntilLoaded(final HtmlPage page) {
     return waitUntilLoaded(page, DEFAULT_TIMEOUT);
+  }
+
+  /** The {@code div[name=parameter]} of the REST parameter {@code name}. */
+  public static DomElement parameter(final HtmlPage page, final String name) {
+    for (DomNode node : page.querySelectorAll("div[name=parameter]")) {
+      DomNode hidden = node.querySelector("input[name=name]");
+      if (hidden != null && name.equals(((DomElement) hidden).getAttribute("value"))) {
+        return (DomElement) node;
+      }
+    }
+    throw new AssertionError("no parameter " + name);
+  }
+
+  /** Opens the Select2 dropdown of the parameter {@code name}; its panel is appended to the page's body. */
+  public static void openDropdown(final HtmlPage page, final String name) throws Exception {
+    DomElement selection = parameter(page, name).querySelector(".select2-selection");
+    assertNotNull(selection, "select2 did not enhance the parameter");
+    ((HtmlElement) selection).click();
+    page.getWebClient().waitForBackgroundJavaScript(1000);
+  }
+
+  /** Opens the dropdown of the parameter {@code name} and types {@code text} into its search field. */
+  public static HtmlInput typeInDropdown(final HtmlPage page, final String name, final String text)
+    throws Exception
+  {
+    openDropdown(page, name);
+    HtmlInput search = (HtmlInput) searchField(page);
+    search.type(text);
+    page.getWebClient().waitForBackgroundJavaScript(1000);
+    return search;
+  }
+
+  /** Types {@code text} into the dropdown of the parameter {@code name} and picks the offered custom value. */
+  public static void pickCustomValue(final HtmlPage page, final String name, final String text) throws Exception {
+    typeInDropdown(page, name, text);
+    assertNotNull(customOption(page, text), "no custom value offered for " + text);
+    pickShownOption(page, customLabel(text));
+  }
+
+  /** Opens the dropdown of the parameter {@code name} and picks the option shown as {@code text}. */
+  public static void pickOption(final HtmlPage page, final String name, final String text) throws Exception {
+    openDropdown(page, name);
+    pickShownOption(page, text);
+  }
+
+  /** Picks the option shown as {@code text} in the dropdown that is already open. */
+  public static void pickShownOption(final HtmlPage page, final String text) throws Exception {
+    for (DomNode option : resultOptions(page)) {
+      if (text.equals(option.asNormalizedText())) {
+        ((HtmlElement) option).click();
+        page.getWebClient().waitForBackgroundJavaScript(1000);
+        return;
+      }
+    }
+    throw new AssertionError("no option " + text + " in the open dropdown");
+  }
+
+  /** The option offering {@code text} as a custom value, or {@code null} when it is not offered. */
+  public static DomNode customOption(final HtmlPage page, final String text) {
+    for (DomNode option : resultOptions(page)) {
+      if (customLabel(text).equals(option.asNormalizedText())) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  /** The label of the option that offers {@code text} as a custom value. */
+  public static String customLabel(final String text) {
+    return Messages.RLP_BuildForm_CustomValue(text);
+  }
+
+  /** The options of the open dropdown. */
+  public static List<DomNode> resultOptions(final HtmlPage page) {
+    return List.copyOf(page.querySelectorAll(".select2-container--open .select2-results__option"));
+  }
+
+  /** The search field container of the open dropdown; it carries {@code select2-search--hide} when hidden. */
+  public static DomElement searchContainer(final HtmlPage page) {
+    DomElement search = page.querySelector(".select2-container--open .select2-search--dropdown");
+    assertNotNull(search, "dropdown is not open");
+    return search;
+  }
+
+  /** The search field of the open dropdown, of the panel or, for a multi-select, of the control itself. */
+  public static DomElement searchField(final HtmlPage page) {
+    DomElement search = page.querySelector(".select2-container--open .select2-search__field");
+    assertNotNull(search, "no search field");
+    return search;
   }
 
   /**

@@ -11,6 +11,10 @@ jQuery3.noConflict();
   var WATCHDOG_MARGIN_MS = 30000;
   // a button without a type attribute submits its form too, as core's Build button does
   var SUBMIT_BUTTONS = "button:not([type]), button[type=submit], input[type=submit]";
+  // the Select2 theme of select2-jenkins.css
+  var THEME = "jenkins";
+  // a strict dropdown with fewer options is short enough to scan without a search field
+  var SEARCH_THRESHOLD = 10;
 
   function byId(id) {
     return document.getElementById(id);
@@ -77,22 +81,14 @@ jQuery3.noConflict();
     this.proxy = window[wrapper.dataset.rlpLoader];
     this.timeoutMs = (parseInt(wrapper.dataset.rlpTimeout, 10) || 60) * 1000 + WATCHDOG_MARGIN_MS;
     this.select = byId(this.id + "-select");
-    this.input = byId(this.id + "-input");
-    this.datalist = byId(this.id + "-datalist");
     this.loading = byId(this.id + "-loading");
     this.refresh = byId(this.id + "-refresh");
     this.hint = byId(this.id + "-hint");
     this.error = byId(this.id + "-error");
     this.loaded = false;
-    this.edited = false;
     this.generation = 0;
 
     var self = this;
-    if (this.input) {
-      this.input.addEventListener("input", function () {
-        self.edited = true;
-      });
-    }
     this.refresh.addEventListener("click", function () {
       self.load(true);
     });
@@ -169,14 +165,11 @@ jQuery3.noConflict();
   };
 
   Parameter.prototype.valueElement = function () {
-    return this.mode === "freetext" ? this.input : this.select;
+    return this.select;
   };
 
   /** The value the form would submit, as a string that is equal for equal values. */
   Parameter.prototype.value = function () {
-    if (this.mode === "freetext") {
-      return this.input.value;
-    }
     if (this.mode === "multi") {
       return JSON.stringify(Array.prototype.filter.call(this.select.options, function (element) {
         return element.selected;
@@ -212,8 +205,8 @@ jQuery3.noConflict();
   };
 
   Parameter.prototype.showEntries = function (entries, response) {
-    if (this.mode === "freetext") {
-      this.showSuggestions(entries, response);
+    if (this.mode === "custom") {
+      this.showCustomSelect(entries, response);
     }
     else if (this.mode === "multi") {
       this.showMultiSelect(entries, response);
@@ -232,16 +225,75 @@ jQuery3.noConflict();
     return element;
   }
 
-  Parameter.prototype.showSuggestions = function (entries, response) {
-    this.datalist.replaceChildren();
-    var self = this;
-    entries.forEach(function (entry) {
-      self.datalist.appendChild(option(entry.value, entry.display, false));
+  function selectedOption(select) {
+    return select.selectedIndex >= 0 ? select.options[select.selectedIndex] : null;
+  }
+
+  /**
+   * Offers text that is not shown by any option as a value of its own. Select2 turns what this returns into an
+   * option of the dropdown, and into an option of the select when the user picks it.
+   */
+  function createTag(select) {
+    return function (params) {
+      var term = (params.term || "").trim();
+      if (term === "") {
+        return null;
+      }
+      var listed = Array.prototype.some.call(select.options, function (element) {
+        return element.textContent === term;
+      });
+      return listed ? null : { id: term, text: term, rlpCustom: true };
+    };
+  }
+
+  /** Labels the typed value in the dropdown as `Use "<text>"`, the entries by their display value. */
+  function templateResult(select) {
+    var label = select.dataset.customLabel || "";
+    return function (data) {
+      return data.rlpCustom === true ? label.replace("{0}", data.text) : data.text;
+    };
+  }
+
+  Parameter.prototype.showCustomSelect = function (entries, response) {
+    var select = this.select;
+    var empty = select.querySelector("option[data-rlp-empty]");
+    // after the first load the value stays, whether it is a listed entry or a value the user typed
+    var current = this.loaded ? selectedOption(select) : null;
+    var wanted = current ? current.value
+                         : (typeof response.freeTextValue === "string" ? response.freeTextValue : "");
+    var wantedText = current ? current.textContent : wanted;
+
+    this.destroySelect2();
+    select.querySelectorAll("option:not([data-rlp-empty])").forEach(function (element) {
+      element.remove();
     });
-    // the default is shown verbatim until the entries arrive; text the user typed is kept
-    if (!this.loaded && !this.edited && typeof response.freeTextValue === "string") {
-      this.input.value = response.freeTextValue;
+    var listed = false;
+    entries.forEach(function (entry) {
+      var selected = !listed && entry.value === wanted;
+      listed = listed || selected;
+      select.appendChild(option(entry.value, entry.display, selected));
+    });
+    if (!listed && wanted !== "") {
+      var custom = option(wanted, wantedText, true);
+      custom.dataset.rlpCustom = "true";
+      select.appendChild(custom);
     }
+    if (empty) {
+      empty.selected = !listed && wanted === "";
+    }
+
+    var options = {
+      theme: THEME,
+      // the search field is how a value that is not listed is typed, so it is always shown
+      minimumResultsForSearch: 0,
+      tags: true,
+      createTag: createTag(select),
+      templateResult: templateResult(select)
+    };
+    if (select.dataset.allowEmptyValue !== "true") {
+      options.placeholder = "Select an option";
+    }
+    jQuery3(select).select2(options);
   };
 
   Parameter.prototype.showSelect = function (entries) {
@@ -267,7 +319,7 @@ jQuery3.noConflict();
       empty.selected = emptySelected;
     }
 
-    var options = { theme: "bootstrap4" };
+    var options = { theme: THEME, minimumResultsForSearch: SEARCH_THRESHOLD };
     // When the parameter does not allow an empty value, use a placeholder so the
     // user is prompted to pick a real option. When empty values are allowed, the
     // first <option value=""> rendered by index.jelly must remain a real
@@ -316,7 +368,13 @@ jQuery3.noConflict();
 
     // An empty selection is the empty value, so there is no empty option and the placeholder is always shown.
     // With validation disabled, tags mode lets the user type entries that are not in the list.
-    jQuery3(select).select2({ theme: "bootstrap4", placeholder: "Select one or more options", tags: tags });
+    jQuery3(select).select2({
+      theme: THEME,
+      placeholder: "Select one or more options",
+      tags: tags,
+      createTag: createTag(select),
+      templateResult: templateResult(select)
+    });
   };
 
   Parameter.prototype.destroySelect2 = function () {
