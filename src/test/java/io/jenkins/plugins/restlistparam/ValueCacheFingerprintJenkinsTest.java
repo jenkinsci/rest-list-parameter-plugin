@@ -44,8 +44,14 @@ class ValueCacheFingerprintJenkinsTest {
     changed.put("order", def("https://h/api", "cred", MimeType.APPLICATION_JSON, "$.*", "$.name", ".*", ValueOrder.ASC));
     changed.put("header name", withHeader(h -> h.setValuePrefix("Bearer "), "X-Other"));
     changed.put("header prefix", withHeader(h -> h.setValuePrefix("Token "), "X-Key"));
-    changed.put("header credential", withHeader(h -> { h.setValuePrefix("Bearer "); h.setCredentialId("c2"); }, "X-Key"));
-    changed.put("header secret", withHeader(h -> { h.setValuePrefix("Bearer "); h.setValue(Secret.fromString("other")); }, "X-Key"));
+    changed.put("header credential", withHeader(h -> {
+      h.setValuePrefix("Bearer ");
+      h.setCredentialId("c2");
+    }, "X-Key"));
+    changed.put("header secret", withHeader(h -> {
+      h.setValuePrefix("Bearer ");
+      h.setValue(Secret.fromString("other"));
+    }, "X-Key"));
     changed.put("no pagination", withPagination(null));
     changed.put("pagination kind", withPagination(new ContinuationTokenPagination("$.next", "token")));
     LinkHeaderPagination morePages = new LinkHeaderPagination();
