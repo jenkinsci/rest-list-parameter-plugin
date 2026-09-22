@@ -2,14 +2,15 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core"
          xmlns:st="jelly:stapler"
+         xmlns:l="/lib/layout"
          xmlns:f="/lib/form">
 
   <st:adjunct includes="io.jenkins.plugins.jquery3"/>
   <st:adjunct includes="io.jenkins.plugins.select2"/>
-  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.selectInit"/>
+  <st:adjunct includes="io.jenkins.plugins.restlistparam.RestListParameterDefinition.loader"/>
   <j:set var="id" value="${h.generateId()}"/>
-  <!-- fetch once per render; also sets it.errorMsg used below -->
-  <j:set var="values" value="${it.values}"/>
+  <!-- the entries are not fetched while rendering; loader.js requests them through this bound object -->
+  <st:bind var="rlpLoader_${id}" value="${it.createLoader()}"/>
 
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-bootstrap4.min.css"/>
   <link rel="stylesheet" type="text/css" href="${resURL}/plugin/rest-list-parameter/css/select2-theming-patch.css"/>
@@ -17,7 +18,10 @@
   <j:set var="escapeEntryTitleAndDescription" value="false"/>
   <f:entry title="${h.escape(it.name)}" description="${it.formattedDescription}">
     <!-- this div is required because of ParametersDefinitionProperty.java#117 -->
-    <div name="parameter" description="${it.description}">
+    <div name="parameter" description="${it.description}"
+         data-rlp-id="${id}" data-rlp-loader="rlpLoader_${id}" data-rlp-state="loading"
+         data-rlp-mode="${it.enableValidation ? 'select' : 'freetext'}"
+         data-rlp-timeout="${it.descriptor.fetchTimeout}">
       <input type="hidden" name="name" value="${it.name}"/>
 
       <j:choose>
@@ -25,52 +29,36 @@
           <!-- Validation disabled: render a free-text input backed by a datalist
                of fetched values. Users can pick from suggestions or type any
                value (helpful when paginated APIs do not surface what they need;
-               see jenkinsci/rest-list-parameter-plugin#61 and #86). -->
+               see jenkinsci/rest-list-parameter-plugin#61 and #86). The default is
+               shown verbatim until the entries arrive. -->
           <input id="${id}-input" type="text" class="setting-input" name="value"
-                 value="${it.resolveFreeTextDefault(values)}" list="${id}-datalist" autocomplete="off"/>
-          <datalist id="${id}-datalist">
-            <j:forEach var="item" items="${values}" varStatus="loop">
-              <f:option value="${item.value}">${item.displayValue}</f:option>
-            </j:forEach>
-          </datalist>
+                 value="${it.defaultValue}" list="${id}-datalist" autocomplete="off"/>
+          <datalist id="${id}-datalist"/>
         </j:when>
         <j:otherwise>
           <select id="${id}-select" data-select2-id="${id}-select" data-allow-empty-value="${it.allowEmptyValue}" class="setting-input" name="value">
             <j:if test="${it.allowEmptyValue}">
-              <f:option value="" selected="${empty it.defaultValue}">&#8212;</f:option>
+              <option value="" data-rlp-empty="true" selected="${empty it.defaultValue ? 'selected' : null}">&#8212;</option>
             </j:if>
-            <j:forEach var="item" items="${values}" varStatus="loop">
-              <f:option value="${item.value}" selected="${item.displayValue.equals(it.defaultValue)}">
-                ${item.displayValue}
-              </f:option>
-            </j:forEach>
           </select>
         </j:otherwise>
       </j:choose>
 
-      <j:choose>
-        <j:when test="${divBasedFormLayout}">
-          <div class="tr" display="${it.errorMsg == '' ? 'none' : ''}">
-            <div class="${it.errorMsg == '' ? '' : 'error'}">
-              ${it.errorMsg}
-            </div>
-          </div>
-        </j:when>
-      </j:choose>
+      <st:include page="loaderControls.jelly" class="io.jenkins.plugins.restlistparam.RestListParameterDefinition"/>
+
+      <j:if test="${divBasedFormLayout}">
+        <st:include page="loaderError.jelly" class="io.jenkins.plugins.restlistparam.RestListParameterDefinition"/>
+      </j:if>
     </div>
   </f:entry>
 
-  <j:choose>
-    <j:when test="${!divBasedFormLayout}">
-      <tr display="${it.errorMsg == '' ? 'none' : ''}">
-        <td colspan="2"></td>
-        <td class="${it.errorMsg == '' ? '' : 'error'}"
-            style="margin-top: 0.2rem;"
-            name="errorMsg">
-          ${it.errorMsg}
-        </td>
-      </tr>
-    </j:when>
-  </j:choose>
+  <j:if test="${!divBasedFormLayout}">
+    <tr>
+      <td colspan="2"></td>
+      <td>
+        <st:include page="loaderError.jelly" class="io.jenkins.plugins.restlistparam.RestListParameterDefinition"/>
+      </td>
+    </tr>
+  </j:if>
 
 </j:jelly>

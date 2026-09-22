@@ -47,6 +47,13 @@ public abstract class AbstractRestListParameterDescriptor extends ParameterDescr
   }
 
   /**
+   * @return The global fetch timeout in seconds, which the build form uses to give up on a load without a response
+   */
+  public Integer getFetchTimeout() {
+    return RestListParameterGlobalConfig.get().getFetchTimeout();
+  }
+
+  /**
    * The pagination block is an inline {@code f:optionalBlock}, so the strategy binds straight to the
    * {@code pagination} field. Inline blocks submit their fields even while unchecked, so an unchecked block
    * is turned into "no pagination" here.

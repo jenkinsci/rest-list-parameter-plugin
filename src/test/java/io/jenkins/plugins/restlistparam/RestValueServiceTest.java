@@ -56,6 +56,25 @@ class RestValueServiceTest {
     assertEquals(0, test.getValue().size());
   }
 
+  /**
+   * specs/value-fetching, "Transport failures become user-facing errors", "Other I/O failure": nothing listens on
+   * port 1, so the connection is refused at once.
+   */
+  @Test
+  void otherIoFailureNamesTheExceptionType() {
+    ResultContainer<List<ValueItem>> test = RestValueService
+      .get("http://127.0.0.1:1/api",
+        null,
+        MimeType.APPLICATION_JSON,
+        0,
+        "$.*",
+        "$",
+        null,
+        ValueOrder.NONE);
+    assertEquals("OKHttp request threw java.net.ConnectException", test.getErrorMsg().orElse(null));
+    assertTrue(test.getValue().isEmpty());
+  }
+
   @Test
   void sendsCustomHeader() throws Exception {
     Method buildHeaders = RestValueService.class.getDeclaredMethod("buildHeaders",

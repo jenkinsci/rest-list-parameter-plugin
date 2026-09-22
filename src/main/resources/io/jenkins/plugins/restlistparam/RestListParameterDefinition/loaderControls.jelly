@@ -1,0 +1,12 @@
+<?jelly escape-by-default='true'?>
+<!-- Loading indicator, refresh action and submission hint of a REST parameter on the build form; expects ${id}. -->
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout">
+  <div class="rlp-controls">
+    <span id="${id}-loading" class="jenkins-spinner rlp-loading">${%Loading values}</span>
+    <button id="${id}-refresh" type="button" class="jenkins-button jenkins-button--tertiary rlp-refresh"
+            title="${%Refresh values}" tooltip="${%Refresh values}" disabled="disabled">
+      <l:icon src="symbol-refresh" class="icon-sm"/>
+    </button>
+  </div>
+  <div id="${id}-hint" class="rlp-hint" hidden="hidden">${%Values are still loading}</div>
+</j:jelly>

@@ -1,0 +1,11 @@
+<?jelly escape-by-default='true'?>
+<!-- Error display of a REST parameter on the build form, filled in by loader.js; expects ${id}. -->
+<j:jelly xmlns:j="jelly:core">
+  <div id="${id}-error" class="rlp-error" hidden="hidden"
+       data-failed-message="${%Loading values failed}"
+       data-label-page="${%page}" data-label-duration="${%ms}">
+    <div class="error rlp-error-message"/>
+    <div class="rlp-details" hidden="hidden"/>
+    <button type="button" class="jenkins-button jenkins-button--tertiary rlp-retry">${%Retry}</button>
+  </div>
+</j:jelly>

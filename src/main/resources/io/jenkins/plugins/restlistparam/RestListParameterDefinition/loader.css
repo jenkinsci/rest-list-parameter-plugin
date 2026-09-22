@@ -1,0 +1,39 @@
+.rlp-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.75rem;
+  margin-top: 0.25rem;
+}
+
+.rlp-controls .rlp-refresh {
+  margin-left: auto;
+}
+
+.rlp-hint {
+  margin-top: 0.25rem;
+  color: var(--warning-color);
+}
+
+.rlp-error {
+  margin-top: 0.25rem;
+}
+
+.rlp-details {
+  margin-top: 0.125rem;
+  color: var(--text-color-secondary);
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+.rlp-controls [hidden],
+.rlp-hint[hidden],
+.rlp-error[hidden],
+.rlp-details[hidden] {
+  display: none !important;
+}
+
+.rlp-submit-blocked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

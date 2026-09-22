@@ -36,8 +36,9 @@ Release notes can be found in the link:https://github.com/jenkinsci/rest-list-pa
 * Filter/Pars the values of the web response with Json-Path or xPath (depending on MIME type)
 * Set a per-selected default value (as long as that value is within the received value list)
 * Pick several values in one build with the link:#multi-list-parameter[REST Multi List Parameter]
-* User-friendly error communication
-* Response value caching
+* Values load in the background after the `Build with Parameters` page opens, each parameter on its own, with a refresh action
+* User-friendly error communication, with request details for users who can configure the job
+* Value caching independent of the endpoint's caching headers, with a bounded fetch time
 * Advanced configuration validation
 * Optional value post processing
 ** Filter the already parsed values via a REGEX
@@ -185,8 +186,8 @@ A page without matches is fine. Only when all pages together yield nothing is it
 Page limit::
 `Max Pages` limits the number of requests per fetch, counting the first one: 10 by default, at most 100 (larger values are treated as 100).
 When the limit is reached while the last page still points to a next page, the values fetched so far are used and a warning is logged.
-All pages are requested one after another while the `Build with Parameters` form renders, so each page adds to the time the form takes to open.
-Each page is cached individually for the `Cache Max Age`.
+All pages are requested one after another when the parameter's values load, so each page adds to the time until they appear, and all of them together are bounded by the global link:#fetchTimeout[fetch timeout].
+The combined values of all pages are cached as one list for the `Cache Max Age` (see link:#valueCaching[Value Caching]).
 
 Same-host rule::
 Every page is requested with the same credentials and custom headers as the first one.
@@ -246,16 +247,51 @@ image::.media/configuration-test_error1.png[Faild Configuiration Validation (due
 
 image::.media/configuration-test_error2.png[Faild Configuiration Validation (due to json-path)]
 
+[#asyncLoading]
+=== Loading values on the build form
+
+The `Build with Parameters` page opens without waiting for any endpoint.
+Each `REST List Parameter` and `REST Multi List Parameter` shows a loading indicator and requests its values on its own, so a slow endpoint only delays its own parameter.
+Once the values arrive, the parameter shows them with the usual dropdown, free-text or multi-select behaviour and default preselection.
+
+* While any parameter is still loading, the form is not submitted; clicking `Build` shows `Values are still loading` beneath the parameters still loading.
+A parameter whose load failed does not block the form: the submitted value is validated as usual.
+* A failed load shows its error beneath the parameter with a `Retry` action.
+Users who can configure the job also see the endpoint URL (without query string and user info), the page that failed, the HTTP status or exception type and the duration; response bodies and secrets are never shown.
+* The refresh button next to each parameter loads its values again, bypassing all caches.
+The selected entry stays selected if it is still offered, typed free text is kept, and free-form entries of a multi-select are kept.
+* Loading the values requires the Build permission on the job.
+In a Pipeline `input` step, users without Build on the job cannot load the values.
+* The values are shown by JavaScript, as Select2 already required.
+
+[#fetchTimeout]
+Fetch timeout::
+One fetch of a parameter's values, including all its pages, may take at most the global `Fetch Timeout` _(default 60 seconds)_.
+When it is reached, the parameter shows `Fetching values timed out after <n> seconds` instead of values.
+
 [#valueCaching]
 === Value Caching
 
-NOTE: Added in v1.2.0
+NOTE: Added in v1.2.0; since the values load in the background, the processed values are cached independently of the endpoint's caching headers.
 
 The ability to use value caching allows for great performance improvements in cases of repetitive building and querying the same REST endpoints.
 Additionally, it drastically decreases the amount of endpoint queries, which is especially useful for rate limited endpoints.
 Per default caching is disabled for new and old `REST List Parameter`, but can be activated at any time by setting how many minutes the values should stay cached for.
 
-Additionally, there are global configuration values now, that give the user control over the global cache size _(default 50 MiB)_, as well as the default value for the cache max age _(default 0 minutes)_.
+With a `Cache Max Age` greater than 0, the final values of a successful fetch (all pages, after the expressions, the filter and the order) are kept in memory for that many minutes.
+This works whatever caching headers the endpoint sends, including `Cache-Control: no-store`.
+The build form, the validation of a submitted value and Rebuild all use these values:
+
+* Values are cached per job, parameter name and value source (endpoint, credentials, MIME type, expressions, filter, order, custom headers and pagination), so jobs with different credentials never share values, and changing the configuration makes earlier values unused.
+* Failed fetches are not cached, and do not remove values cached earlier.
+* A submitted value found in fresh cached values is accepted without contacting the endpoint.
+Otherwise the values are fetched once more, bypassing all caches, before the value is accepted or rejected, so a value published after the values were cached (for example a release triggered by a Pipeline) is accepted.
+* The cache holds the values of up to 1000 parameters, evicting the least recently used ones first (system property `io.jenkins.plugins.restlistparam.ValueCache.maxEntries`), is never written to disk, and is empty after Jenkins restarts.
+
+Cached values are replaced with fresh ones by the refresh button on the build form, and administrators can clear all of them with `Clear Value Cache` in the global configuration, without saving it.
+Below this cache, endpoint responses are still kept in the HTTP response cache on disk, bounded by the global cache size, as long as the endpoint's own caching headers allow it.
+
+Additionally, there are global configuration values now, that give the user control over the global cache size _(default 50 MiB)_, as well as the default value for the cache max age _(default 0 minutes)_ and the link:#fetchTimeout[fetch timeout] _(default 60 seconds)_.
 These values can be overwritten within the UI or via the link:https://github.com/jenkinsci/configuration-as-code-plugin[ConfigurationAsCode] plugin and applying a config link:#jcasc[with this] added.
 
 image::.media/global-configuration.png[Global Config]
@@ -447,8 +483,9 @@ Repeating the parameter name (`?TARGETS=staging&TARGETS=prod`) is not supported:
 
 ==== Validation and free-form entries
 
-With `Enable Value Validation` checked (the default), every element must be the value of an entry fetched when the build is submitted.
-If fetching fails at that time, any non-empty list is rejected.
+With `Enable Value Validation` checked (the default), every element must be the value of an entry.
+The list is accepted from the link:#valueCaching[cached values] when they are fresh and contain every element; otherwise the entries are fetched once when the build is submitted and every element is checked against them.
+If that fetch fails, any non-empty list is rejected.
 
 With it unchecked, the user can also type entries that are not in the list; each one is submitted verbatim as its own element, and the endpoint is not contacted to validate the submission.
 This helps with paginated APIs whose wanted value is not on the first page.
@@ -479,8 +516,9 @@ Plugins that assume a parameter value is a string may therefore handle it differ
 unclassified:
   # ...
   restListParam:
-    cacheSize: 50 # in mebibyte, needs to be greater than 0
-    cacheTime: 0  # in minutes, 0 => per default don't use cache
+    cacheSize: 50    # in mebibyte, needs to be greater than 0
+    cacheTime: 0     # in minutes, 0 => per default don't use cache
+    fetchTimeout: 60 # in seconds, bounds one fetch of a parameter's values including all pages
   # ...
 ----
 

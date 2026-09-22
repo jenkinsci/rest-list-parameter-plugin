@@ -269,10 +269,7 @@ class RestMultiListParameterUiJenkinsTest {
   }
 
   private static HtmlPage buildForm(final JenkinsRule r, final FreeStyleProject project) throws Exception {
-    JenkinsRule.WebClient wc = r.createWebClient();
-    // Jenkins serves the parameters form for a GET on build, with status 405
-    wc.setThrowExceptionOnFailingStatusCode(false);
-    return wc.getPage(project, "build?delay=0sec");
+    return BuildForms.open(r, project);
   }
 
   private static List<String> submitted(final FreeStyleProject project) {

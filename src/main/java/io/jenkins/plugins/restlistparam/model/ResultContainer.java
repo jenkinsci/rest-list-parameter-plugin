@@ -8,6 +8,9 @@ public class ResultContainer<V> {
   private V value;
   private int pagesFetched = 1;
   private boolean pageLimitReached = false;
+  private FetchErrorDetails errorDetails;
+  private String errorCause;
+  private boolean timedOut = false;
 
   public ResultContainer(V defaultValue) {
     this.value = defaultValue;
@@ -62,5 +65,38 @@ public class ResultContainer<V> {
 
   public void setPageLimitReached(boolean pageLimitReached) {
     this.pageLimitReached = pageLimitReached;
+  }
+
+  /**
+   * @return Request metadata of the failure, when the error came from fetching
+   */
+  public Optional<FetchErrorDetails> getErrorDetails() {
+    return Optional.ofNullable(errorDetails);
+  }
+
+  public void setErrorDetails(FetchErrorDetails errorDetails) {
+    this.errorDetails = errorDetails;
+  }
+
+  /**
+   * @return The HTTP status code or the exception's simple name behind the error, if known
+   */
+  public String getErrorCause() {
+    return errorCause;
+  }
+
+  public void setErrorCause(String errorCause) {
+    this.errorCause = errorCause;
+  }
+
+  /**
+   * @return Whether the error is that the fetch ran out of time
+   */
+  public boolean isTimedOut() {
+    return timedOut;
+  }
+
+  public void setTimedOut(boolean timedOut) {
+    this.timedOut = timedOut;
   }
 }

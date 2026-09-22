@@ -6,10 +6,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StubHttpServerTest {
@@ -82,6 +84,61 @@ class StubHttpServerTest {
         HttpResponse.BodyHandlers.ofString());
 
       assertEquals("/api?token=a%2Bb%2Fc%3D", stub.lastRequest().uri());
+    }
+  }
+
+  @Test
+  void delaysOnlyTheConfiguredPath() throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/slow", "[\"s\"]").withDelay("/slow", Duration.ofMillis(1500));
+      stub.respondJson("/fast", "[\"f\"]");
+      HttpClient client = HttpClient.newHttpClient();
+
+      long start = System.nanoTime();
+      var slow = client.sendAsync(HttpRequest.newBuilder(URI.create(stub.url("/slow"))).build(),
+        HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> fast = client.send(HttpRequest.newBuilder(URI.create(stub.url("/fast"))).build(),
+        HttpResponse.BodyHandlers.ofString());
+      long fastMillis = Duration.ofNanos(System.nanoTime() - start).toMillis();
+      HttpResponse<String> slowResponse = slow.get();
+      long slowMillis = Duration.ofNanos(System.nanoTime() - start).toMillis();
+
+      assertEquals("[\"f\"]", fast.body());
+      assertTrue(fastMillis < 1000, "fast path waited for the slow one: " + fastMillis + " ms");
+      assertEquals("[\"s\"]", slowResponse.body());
+      assertTrue(slowMillis >= 1500, "slow path answered after " + slowMillis + " ms");
+    }
+  }
+
+  @Test
+  void recordsCacheControlRequestHeader() throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/api", "[]");
+      HttpClient client = HttpClient.newHttpClient();
+
+      client.send(HttpRequest.newBuilder(URI.create(stub.url("/api"))).header("Cache-Control", "no-cache").build(),
+        HttpResponse.BodyHandlers.ofString());
+      assertEquals("no-cache", stub.lastRequest().cacheControl());
+
+      client.send(HttpRequest.newBuilder(URI.create(stub.url("/api"))).build(), HttpResponse.BodyHandlers.ofString());
+      assertNull(stub.lastRequest().cacheControl());
+    }
+  }
+
+  @Test
+  void oneTimeResponsesComeFirst() throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/api", "[\"ok\"]").respondOnce("/api", 503, "text/plain", "down");
+      HttpClient client = HttpClient.newHttpClient();
+
+      HttpResponse<String> first = client.send(HttpRequest.newBuilder(URI.create(stub.url("/api"))).build(),
+        HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> second = client.send(HttpRequest.newBuilder(URI.create(stub.url("/api"))).build(),
+        HttpResponse.BodyHandlers.ofString());
+
+      assertEquals(503, first.statusCode());
+      assertEquals(200, second.statusCode());
+      assertEquals("[\"ok\"]", second.body());
     }
   }
 }

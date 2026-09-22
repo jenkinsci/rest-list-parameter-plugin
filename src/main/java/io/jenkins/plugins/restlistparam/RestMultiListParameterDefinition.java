@@ -18,7 +18,6 @@ import org.kohsuke.stapler.StaplerRequest2;
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -98,6 +97,7 @@ public final class RestMultiListParameterDefinition extends AbstractRestListPara
    * @param item A fetched entry
    * @return Whether the entry's display value is one of the default values
    */
+  @Override
   public boolean isDefaultSelected(final ValueItem item) {
     return item != null && getDefaultDisplayValues().contains(item.getDisplayValue());
   }
@@ -223,12 +223,13 @@ public final class RestMultiListParameterDefinition extends AbstractRestListPara
     }
     Set<String> fetched = null;
     if (isEnableValidation()) {
-      fetched = new HashSet<>();
-      for (ValueItem item : getValues()) {
-        if (item != null && item.getValue() != null) {
-          fetched.add(item.getValue());
+      Set<String> required = new LinkedHashSet<>();
+      for (String element : elements) {
+        if (element != null && !element.isEmpty()) {
+          required.add(element);
         }
       }
+      fetched = entryValuesFor(required);
     }
     for (String element : new LinkedHashSet<>(elements)) {
       if (element == null || element.isEmpty()) {

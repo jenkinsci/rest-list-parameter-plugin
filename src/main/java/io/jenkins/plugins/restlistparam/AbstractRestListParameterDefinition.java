@@ -1,22 +1,22 @@
 package io.jenkins.plugins.restlistparam;
 
-import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import hudson.model.Item;
 import hudson.model.SimpleParameterDefinition;
-import io.jenkins.plugins.restlistparam.logic.RestValueService;
+import io.jenkins.plugins.restlistparam.logic.ValueService;
 import io.jenkins.plugins.restlistparam.model.CustomHeader;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.Pagination;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
-import io.jenkins.plugins.restlistparam.util.CredentialsUtils;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.Stapler;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 /**
  * The value source (endpoint, credentials, expressions, filter, order, cache, custom headers, pagination) and the
@@ -41,6 +41,7 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
   private Integer cacheTime;
   private boolean allowEmptyValue;
   private boolean enableValidation = true;
+  // errorMsg and values are no longer written at runtime; they are kept because stored job configurations contain them
   private String errorMsg;
   private List<ValueItem> values;
   private List<CustomHeader> customHeaders;
@@ -186,39 +187,90 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
     this.pagination = pagination;
   }
 
-  void setErrorMsg(final String errorMsg) {
-    this.errorMsg = errorMsg;
-  }
-
+  /**
+   * @return The error message stored in the job configuration by earlier versions; fetch errors are no longer
+   * stored on the definition
+   */
   public String getErrorMsg() {
     return errorMsg;
   }
 
+  /**
+   * Returns this parameter's entries, from the value cache while they are fresh, fetching them otherwise.
+   * Credentials are resolved against the job of the current Stapler request, if any.
+   *
+   * @return The entries, or an empty list when fetching failed
+   * @deprecated Use {@link ValueService#entries(AbstractRestListParameterDefinition, Item, boolean)}, which also
+   * returns the error
+   */
+  @Deprecated
   public List<ValueItem> getValues() {
-    Item context = null;
+    return ValueService.entries(this, currentContext(), false).getValue();
+  }
 
-    if (Stapler.getCurrentRequest2() != null) {
-      context = Stapler.getCurrentRequest2().findAncestorObject(Item.class);
+  /**
+   * @param item A fetched entry
+   * @return Whether the build form preselects the entry because of the default value
+   */
+  public abstract boolean isDefaultSelected(ValueItem item);
+
+  /**
+   * Creates the object the build form loads this parameter's entries through, for the job of the current request.
+   */
+  public ValueLoader createLoader() {
+    return createLoader(currentContext());
+  }
+
+  /**
+   * @param item The job the build form belongs to, or {@code null} outside any job
+   * @return The object the build form loads this parameter's entries through
+   */
+  public ValueLoader createLoader(final Item item) {
+    return new ValueLoader(this, item);
+  }
+
+  /**
+   * The entry values that submitted elements are checked against when validation is enabled. The cached entries
+   * are used when they are fresh and contain every element; otherwise the entries are fetched once, bypassing both
+   * caches. Stale cached entries are never used.
+   *
+   * @param elements The non-empty elements of the submitted value
+   * @return The entry values to check against; empty when the fetch failed
+   */
+  protected Set<String> entryValuesFor(final Collection<String> elements) {
+    Item context = currentContext();
+    int cacheTime = getCacheTime() != null ? getCacheTime() : 0;
+    List<ValueItem> fresh = ValueCache.get().getFresh(ValueCache.keyFor(this, context), cacheTime);
+    if (fresh != null) {
+      Set<String> cached = valuesOf(fresh);
+      if (cached.containsAll(elements)) {
+        return cached;
+      }
     }
 
-    Optional<StandardCredentials> credentials = CredentialsUtils.findCredentials(context, credentialId);
+    ResultContainer<List<ValueItem>> fetched = ValueService.entries(this, context, true);
+    if (fetched.getErrorMsg().isPresent()) {
+      return Collections.emptySet();
+    }
+    return valuesOf(fetched.getValue());
+  }
 
-    ResultContainer<List<ValueItem>> container = RestValueService.get(
-      getRestEndpoint(),
-      credentials.orElse(null),
-      getMimeType(),
-      getCacheTime(),
-      getValueExpression(),
-      getDisplayExpression(),
-      getFilter(),
-      getValueOrder(),
-      CustomHeader.resolveAll(getCustomHeaders(), context),
-      getPagination());
-
-    // An empty list is a valid response when an empty value may be submitted (#209)
-    boolean expectedEmpty = allowEmptyValue && container.isNoValues();
-    setErrorMsg(expectedEmpty ? "" : container.getErrorMsg().orElse(""));
-    values = container.getValue();
+  private static Set<String> valuesOf(final List<ValueItem> entries) {
+    Set<String> values = new HashSet<>();
+    for (ValueItem item : entries) {
+      if (item != null && item.getValue() != null) {
+        values.add(item.getValue());
+      }
+    }
     return values;
+  }
+
+  /**
+   * @return The job of the current Stapler request, or {@code null} outside a request or any job
+   */
+  private static Item currentContext() {
+    return Stapler.getCurrentRequest2() != null
+      ? Stapler.getCurrentRequest2().findAncestorObject(Item.class)
+      : null;
   }
 }
