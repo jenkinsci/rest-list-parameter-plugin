@@ -132,13 +132,14 @@ public final class RestListParameterDefinition extends AbstractRestListParameter
 
   @Override
   public boolean isValid(ParameterValue value) {
-    if(value == null || value.getValue() == null) {
+    Object submitted = value == null ? null : value.getValue();
+    if (submitted == null) {
       return false;
     }
     // Empty submissions are governed solely by allowEmptyValue, independently of
     // enableValidation, so the two checkboxes compose orthogonally: disabling validation
     // permits arbitrary non-empty values but does not silently allow an empty one.
-    if ("".equals(value.getValue())) {
+    if ("".equals(submitted)) {
       return isAllowEmptyValue();
     }
     if (!isEnableValidation()) {
@@ -147,7 +148,7 @@ public final class RestListParameterDefinition extends AbstractRestListParameter
     return getValues().stream()
       .map(ValueItem::getValue)
       .filter(Objects::nonNull)
-      .anyMatch(val -> value.getValue().equals(val));
+      .anyMatch(submitted::equals);
   }
 
   @Override
