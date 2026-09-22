@@ -150,15 +150,41 @@ jQuery3.noConflict();
   };
 
   Parameter.prototype.render = function (response) {
+    var before = this.value();
     if (!response || response.status !== "ok") {
       this.wrapper.dataset.rlpResult = "error";
       this.showEntries([], {});
       this.showError(response);
-      return;
     }
-    this.wrapper.dataset.rlpResult = "ready";
-    this.showEntries(response.entries || [], response);
-    this.loaded = true;
+    else {
+      this.wrapper.dataset.rlpResult = "ready";
+      this.showEntries(response.entries || [], response);
+      this.loaded = true;
+    }
+    // Referencing parameters (e.g. Active Choices) evaluated the value when the form rendered, before the entries
+    // arrived; tell them about a changed value the way a user selection would (#204)
+    if (this.value() !== before) {
+      this.valueElement().dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  };
+
+  Parameter.prototype.valueElement = function () {
+    return this.mode === "freetext" ? this.input : this.select;
+  };
+
+  /** The value the form would submit, as a string that is equal for equal values. */
+  Parameter.prototype.value = function () {
+    if (this.mode === "freetext") {
+      return this.input.value;
+    }
+    if (this.mode === "multi") {
+      return JSON.stringify(Array.prototype.filter.call(this.select.options, function (element) {
+        return element.selected;
+      }).map(function (element) {
+        return element.value;
+      }));
+    }
+    return this.select.value;
   };
 
   Parameter.prototype.showError = function (response) {
