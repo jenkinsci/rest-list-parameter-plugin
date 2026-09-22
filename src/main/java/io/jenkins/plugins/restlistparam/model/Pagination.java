@@ -139,6 +139,8 @@ public abstract class Pagination extends AbstractDescribableImpl<Pagination> imp
    */
   public static final class NextPage {
     private final HttpUrl url;
+    // the server's page cursor, held in memory for one fetch only: NextPage is never serialized
+    @SuppressWarnings("lgtm[jenkins/plaintext-storage]")
     private final String token;
 
     public NextPage(final HttpUrl url, final String token) {

@@ -29,6 +29,8 @@ public class ContinuationTokenPagination extends Pagination {
   private static final long serialVersionUID = 1L;
   private static final Logger log = Logger.getLogger(ContinuationTokenPagination.class.getName());
 
+  // a Json-Path expression such as $.continuationToken that locates the token, not a credential
+  @SuppressWarnings("lgtm[jenkins/plaintext-storage]")
   private final String tokenExpression;
   private final String queryParameter;
 
