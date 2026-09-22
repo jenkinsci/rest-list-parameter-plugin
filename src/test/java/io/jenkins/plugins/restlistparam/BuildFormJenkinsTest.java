@@ -121,7 +121,7 @@ class BuildFormJenkinsTest {
       assertFalse(BuildForms.searchContainer(page).getAttribute("class").contains("select2-search--hide"),
         "a long list is searched");
       ((HtmlInput) BuildForms.searchContainer(page).querySelector("input")).type("v12");
-      page.getWebClient().waitForBackgroundJavaScript(1000);
+      BuildForms.waitUntil(page, "the options to be narrowed", () -> BuildForms.resultOptions(page).size() == 1);
 
       assertEquals(List.of("v12"), BuildForms.resultOptions(page).stream().map(DomNode::asNormalizedText).toList());
     }
@@ -261,7 +261,8 @@ class BuildFormJenkinsTest {
       HtmlInput search = BuildForms.typeInDropdown(page, "p", "v0.9");
       assertNotNull(BuildForms.customOption(page, "v0.9"), "the typed value is offered as a custom value");
       search.type('\n');
-      page.getWebClient().waitForBackgroundJavaScript(1000);
+      BuildForms.waitUntil(page, "the dropdown to close",
+        () -> page.querySelector(".select2-container--open") == null);
 
       HtmlSelect select = parameter(page, "p").querySelector("select");
       assertEquals(List.of("v0.9"), texts(select.getSelectedOptions()));

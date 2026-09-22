@@ -12,6 +12,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import java.net.URL;
 import java.time.Duration;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -70,7 +71,7 @@ public final class BuildForms {
     DomElement selection = parameter(page, name).querySelector(".select2-selection");
     assertNotNull(selection, "select2 did not enhance the parameter");
     ((HtmlElement) selection).click();
-    page.getWebClient().waitForBackgroundJavaScript(1000);
+    waitUntil(page, "the dropdown to open", () -> page.querySelector(".select2-container--open") != null);
   }
 
   /** Opens the dropdown of the parameter {@code name} and types {@code text} into its search field. */
@@ -80,7 +81,8 @@ public final class BuildForms {
     openDropdown(page, name);
     HtmlInput search = (HtmlInput) searchField(page);
     search.type(text);
-    page.getWebClient().waitForBackgroundJavaScript(1000);
+    // select2 filters the options in the field's input handler, so the options match once the text is in
+    waitUntil(page, "the search field to hold " + text, () -> text.equals(search.getValue()));
     return search;
   }
 
@@ -102,11 +104,28 @@ public final class BuildForms {
     for (DomNode option : resultOptions(page)) {
       if (text.equals(option.asNormalizedText())) {
         ((HtmlElement) option).click();
-        page.getWebClient().waitForBackgroundJavaScript(1000);
+        waitUntil(page, "the dropdown to close", () -> page.querySelector(".select2-container--open") == null);
         return;
       }
     }
     throw new AssertionError("no option " + text + " in the open dropdown");
+  }
+
+  /**
+   * Runs background JavaScript until {@code condition} holds, so that a loaded machine only makes the test slower
+   * instead of failing it.
+   */
+  public static void waitUntil(final HtmlPage page, final String what, final BooleanSupplier condition) {
+    long deadline = System.nanoTime() + DEFAULT_TIMEOUT.toNanos();
+    while (!condition.getAsBoolean()) {
+      page.getWebClient().waitForBackgroundJavaScript(100);
+      if (condition.getAsBoolean()) {
+        return;
+      }
+      if (System.nanoTime() > deadline) {
+        fail("waited " + DEFAULT_TIMEOUT.toSeconds() + " s for " + what);
+      }
+    }
   }
 
   /** The option offering {@code text} as a custom value, or {@code null} when it is not offered. */
