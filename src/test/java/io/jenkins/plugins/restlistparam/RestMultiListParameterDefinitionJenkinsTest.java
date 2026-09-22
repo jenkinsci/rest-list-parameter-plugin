@@ -6,6 +6,7 @@ import hudson.model.ParameterDefinition;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterValue;
+import io.jenkins.plugins.restlistparam.model.LinkHeaderPagination;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
@@ -135,6 +136,22 @@ class RestMultiListParameterDefinitionJenkinsTest {
 
       assertEquals(single.getValues(), multi.getValues());
       assertEquals(2, multi.getValues().size());
+    }
+  }
+
+  @Test
+  void entriesFromAllPagesAreOffered(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/tags", "[\"a\",\"b\"]")
+          .withHeader("/tags", "Link", "<" + stub.url("/tags?page=2") + ">; rel=\"next\"");
+      stub.respondJson("/tags?page=2", "[\"c\"]");
+      RestMultiListParameterDefinition def = new RestMultiListParameterDefinition(
+        "TARGETS", "d", stub.url("/tags"), "", MimeType.APPLICATION_JSON, "$.*", "$",
+        ValueOrder.NONE, ".*", 0, "", false);
+      def.setPagination(new LinkHeaderPagination());
+
+      assertEquals(List.of("a", "b", "c"), def.getValues().stream().map(ValueItem::getValue).toList());
+      assertTrue(def.isValid(multi("a", "c")), "entries from page 2 are valid choices");
     }
   }
 

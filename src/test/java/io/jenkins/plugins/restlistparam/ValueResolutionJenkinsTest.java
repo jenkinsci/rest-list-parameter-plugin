@@ -301,7 +301,7 @@ class ValueResolutionJenkinsTest {
       String headersJson = "[{\"name\":\"X-API-Key\",\"value\":\"\",\"credentialId\":\"api-key\",\"valuePrefix\":\"\"}]";
 
       FormValidation result = descriptor(r).doTestConfiguration(null, stub.url("/list"), "", MimeType.APPLICATION_JSON,
-        "$.*", "$", ".*", ValueOrder.NONE, headersJson);
+        "$.*", "$", ".*", ValueOrder.NONE, headersJson, null);
 
       assertEquals(FormValidation.Kind.OK, result.kind, result.getMessage());
       assertEquals("Test Successful! 2 Values, first: a", result.getMessage());
@@ -315,7 +315,7 @@ class ValueResolutionJenkinsTest {
       stub.respondJson("/list", "[\"a\", \"b\"]");
 
       FormValidation result = descriptor(r).doTestConfiguration(null, stub.url("/list"), "", MimeType.APPLICATION_JSON,
-        "$.*", "$", ".*", ValueOrder.NONE, "{not json");
+        "$.*", "$", ".*", ValueOrder.NONE, "{not json", null);
 
       assertEquals(FormValidation.Kind.OK, result.kind, result.getMessage());
       assertFalse(stub.lastRequest().hasHeader("X-API-Key"));

@@ -1,0 +1,12 @@
+<div>
+  The maximum number of pages to request per value fetch, counting the first request.
+  Allowed are values from <strong>1</strong> to <strong>100</strong>, the default is <strong>10</strong>.
+  <p>
+    When the limit is reached while the last page still points to a next page, the values fetched so far are used
+    and a warning is logged, so the list may be incomplete. <em>Test Configuration</em> reports this as a warning.
+  </p>
+  <p>
+    Every page is a separate request made while the <em>Build with Parameters</em> form renders, so a high limit
+    can make that form slow to open. Each page is cached for the <em>Cache Max Age</em>.
+  </p>
+</div>

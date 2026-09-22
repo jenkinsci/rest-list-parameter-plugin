@@ -6,6 +6,7 @@ import hudson.model.SimpleParameterDefinition;
 import io.jenkins.plugins.restlistparam.logic.RestValueService;
 import io.jenkins.plugins.restlistparam.model.CustomHeader;
 import io.jenkins.plugins.restlistparam.model.MimeType;
+import io.jenkins.plugins.restlistparam.model.Pagination;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
@@ -18,7 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The value source (endpoint, credentials, expressions, filter, order, cache, custom headers) and the
+ * The value source (endpoint, credentials, expressions, filter, order, cache, custom headers, pagination) and the
  * mode flags shared by the REST List and REST Multi List parameters.
  * <p>
  * The fields keep the names and declaration order they had in {@link RestListParameterDefinition},
@@ -43,6 +44,8 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
   private String errorMsg;
   private List<ValueItem> values;
   private List<CustomHeader> customHeaders;
+  // null means one request per fetch, as before pagination existed
+  private Pagination pagination;
 
   protected AbstractRestListParameterDefinition(final String name,
                                                 final String description,
@@ -171,6 +174,18 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
     this.customHeaders = customHeaders != null ? customHeaders : Collections.emptyList();
   }
 
+  /**
+   * @return How to follow paginated responses, or {@code null} to send a single request
+   */
+  public Pagination getPagination() {
+    return pagination;
+  }
+
+  @DataBoundSetter
+  public void setPagination(final Pagination pagination) {
+    this.pagination = pagination;
+  }
+
   void setErrorMsg(final String errorMsg) {
     this.errorMsg = errorMsg;
   }
@@ -197,7 +212,8 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
       getDisplayExpression(),
       getFilter(),
       getValueOrder(),
-      CustomHeader.resolveAll(getCustomHeaders(), context));
+      CustomHeader.resolveAll(getCustomHeaders(), context),
+      getPagination());
 
     // An empty list is a valid response when an empty value may be submitted (#209)
     boolean expectedEmpty = allowEmptyValue && container.isNoValues();

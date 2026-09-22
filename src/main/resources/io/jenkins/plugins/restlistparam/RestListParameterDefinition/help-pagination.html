@@ -1,0 +1,23 @@
+<div>
+  Follows paginated REST responses, so values beyond the API's first page can be selected. The value and display
+  expressions are applied to each page on its own, the entries of all pages are joined in page order, and the
+  filter and sort order are then applied to the combined list. A page without matches is fine; only when all
+  pages together yield nothing is it reported as "no values".
+  <ul>
+    <li><b>Link header</b>: follow the <code>Link</code> header's <code>rel="next"</code> URL (GitHub, GitLab, Gitea, Harbor).</li>
+    <li><b>Continuation token</b>: send a token read from the Json body as a query parameter (Nexus 3, Bitbucket Server).</li>
+  </ul>
+  <p>
+    <strong>NOTE:</strong> all pages are requested one after another while the <em>Build with Parameters</em> form
+    renders, so each page adds to the time the form takes to open. <em>Max Pages</em> (default 10, at most 100)
+    bounds this, and each page is cached for the <em>Cache Max Age</em>.
+  </p>
+  <p>
+    For safety, pagination only follows URLs with the same scheme, host and port as the <em>REST Endpoint</em>, so
+    credentials and custom headers are never sent to another server. A next page on another host fails the fetch.
+    A failure on any page fails the whole list, and a page that repeats an earlier one ends pagination.
+  </p>
+  <p>
+    Uncheck to send a single request, as without pagination.
+  </p>
+</div>

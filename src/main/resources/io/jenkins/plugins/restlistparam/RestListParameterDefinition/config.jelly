@@ -59,16 +59,25 @@
           <f:repeatableProperty field="customHeaders" add="${%parameter.customHeaders.add}" />
         </div>
       </f:entry>
+
+      <!-- inline: the strategy binds directly to the "pagination" field; unchecked submits no pagination (null) -->
+      <f:optionalBlock name="paginationEnabled" inline="true" title="${%parameter.pagination}"
+                       checked="${instance.pagination != null}">
+        <div class="rlp-pagination">
+          <f:dropdownDescriptorSelector field="pagination" title="${%parameter.pagination.strategy}" />
+        </div>
+      </f:optionalBlock>
     </f:section>
   </f:advanced>
 
-  <!-- filled from the header rows by testConfigHeaders.js only while Test Configuration reads its fields -->
+  <!-- filled from the header rows and the pagination block by testConfigHeaders.js only while Test Configuration reads its fields -->
   <input type="hidden" name="_.customHeadersJson" value=""/>
+  <input type="hidden" name="_.paginationJson" value=""/>
   <f:validateButton
       title="${%parameter.testConfig}"
       progress="${%parameter.testing}"
       method="testConfiguration"
-      with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder,customHeadersJson"
+      with="restEndpoint,credentialId,mimeType,valueExpression,displayExpression,filter,valueOrder,customHeadersJson,paginationJson"
   />
 
   <f:entry title="${%parameter.description}" field="description">

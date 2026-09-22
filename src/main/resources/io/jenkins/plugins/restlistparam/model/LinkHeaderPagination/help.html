@@ -1,0 +1,10 @@
+<div>
+  Follows the <code>Link</code> response header entry whose <code>rel</code> includes <code>next</code>
+  (<a href="https://www.rfc-editor.org/rfc/rfc8288">RFC 8288</a>), for example
+  <code>Link: &lt;https://api.github.com/repos/o/r/tags?page=2&gt;; rel="next"</code>.
+  Relative links are resolved against the page that returned them. Pagination ends at the first page without a
+  <code>next</code> link.
+  <p>
+    Used by GitHub, GitLab, Gitea and Harbor, among others. Works for Json and XML responses.
+  </p>
+</div>
