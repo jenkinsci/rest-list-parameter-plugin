@@ -7,7 +7,9 @@ import com.sun.net.httpserver.HttpServer;
 import hudson.model.Descriptor;
 import hudson.model.ParameterDefinition;
 import hudson.model.StringParameterValue;
+import hudson.model.TaskListener;
 import hudson.util.Secret;
+import io.jenkins.plugins.restlistparam.logic.ValueService;
 import io.jenkins.plugins.restlistparam.model.CustomHeader;
 import io.jenkins.plugins.restlistparam.model.LinkHeaderPagination;
 import io.jenkins.plugins.restlistparam.model.MimeType;
@@ -79,7 +81,7 @@ class RestListParameterDefinitionJenkinsTest {
     args.put("allowEmptyValue", true);
     args.put("defaultValue", "");
 
-    RestListParameterDefinition def = model.instantiate(args);
+    RestListParameterDefinition def = model.instantiate(args, TaskListener.NULL);
     assertEquals("VERSION", def.getName());
     assertTrue(def.isAllowEmptyValue(), "allowEmptyValue DataBoundSetter not applied");
     assertEquals("", def.getDefaultValue());
@@ -198,7 +200,7 @@ class RestListParameterDefinitionJenkinsTest {
     args.put("displayExpression", "$");
     args.put("enableValidation", false);
 
-    RestListParameterDefinition def = model.instantiate(args);
+    RestListParameterDefinition def = model.instantiate(args, TaskListener.NULL);
     assertFalse(def.isEnableValidation(), "enableValidation DataBoundSetter not applied");
   }
 
@@ -220,7 +222,7 @@ class RestListParameterDefinitionJenkinsTest {
     authHeader.put("valuePrefix", "Token ");
     args.put("customHeaders", Arrays.asList(authHeader));
 
-    RestListParameterDefinition def = model.instantiate(args);
+    RestListParameterDefinition def = model.instantiate(args, TaskListener.NULL);
     List<CustomHeader> customHeaders = def.getCustomHeaders();
     assertEquals(1, customHeaders.size());
     assertEquals("Authorization", customHeaders.get(0).getName());
@@ -244,7 +246,7 @@ class RestListParameterDefinitionJenkinsTest {
       header.setValuePrefix("Token ");
       def.setCustomHeaders(Collections.singletonList(header));
 
-      assertEquals(3, def.getValues().size());
+      assertEquals(3, ValueService.entries(def, null, false).getValue().size());
       assertEquals("Token credential-token", server.header("X-Auth-Token"));
     }
   }
@@ -289,7 +291,7 @@ class RestListParameterDefinitionJenkinsTest {
         ValueOrder.NONE, ".*", 0, "", false);
       def.setPagination(new LinkHeaderPagination());
 
-      assertEquals(List.of("v1", "v2", "v3"), def.getValues().stream().map(ValueItem::getValue).toList());
+      assertEquals(List.of("v1", "v2", "v3"), ValueService.entries(def, null, false).getValue().stream().map(ValueItem::getValue).toList());
       assertEquals("", def.getErrorMsg());
       assertTrue(def.isValid(new StringParameterValue("p", "v3")), "a value from page 2 is a valid choice");
     }
@@ -310,7 +312,7 @@ class RestListParameterDefinitionJenkinsTest {
       def.setCustomHeaders(Collections.singletonList(header));
       def.setPagination(new LinkHeaderPagination());
 
-      assertEquals(3, def.getValues().size());
+      assertEquals(3, ValueService.entries(def, null, false).getValue().size());
 
       assertEquals(3, stub.requests().size());
       for (StubHttpServer.RecordedRequest request : stub.requests()) {
@@ -329,10 +331,10 @@ class RestListParameterDefinitionJenkinsTest {
         ValueOrder.NONE, ".*", 10, "", false);
       def.setPagination(new LinkHeaderPagination());
 
-      assertEquals(3, def.getValues().size());
+      assertEquals(3, ValueService.entries(def, null, false).getValue().size());
       assertEquals(3, stub.requests().size());
 
-      assertEquals(3, def.getValues().size());
+      assertEquals(3, ValueService.entries(def, null, false).getValue().size());
       assertEquals(3, stub.requests().size(), "a second fetch within the cache time sends no request");
     }
   }

@@ -16,6 +16,7 @@ import io.jenkins.plugins.restlistparam.Messages;
 import jenkins.model.Jenkins;
 
 import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+import org.springframework.security.core.Authentication;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +45,7 @@ public class CredentialsUtils {
     return new StandardListBoxModel()
       .includeEmptyValue()
       .includeMatchingAs(
-        context instanceof Queue.Task ? Tasks.getAuthenticationOf((Queue.Task) context) : ACL.SYSTEM,
+        authenticationFor(context),
         context,
         StandardCredentials.class,
         Collections.emptyList(),
@@ -68,7 +69,7 @@ public class CredentialsUtils {
     return new StandardListBoxModel()
       .includeEmptyValue()
       .includeMatchingAs(
-        context instanceof Queue.Task ? Tasks.getAuthenticationOf((Queue.Task) context) : ACL.SYSTEM,
+        authenticationFor(context),
         context,
         StringCredentials.class,
         Collections.emptyList(),
@@ -105,11 +106,11 @@ public class CredentialsUtils {
     if (credentialsId == null || credentialsId.isBlank()) {
       return Optional.empty();
     }
-    List<StandardCredentials> lookupCredentials = CredentialsProvider.lookupCredentials(
+    List<StandardCredentials> lookupCredentials = CredentialsProvider.lookupCredentialsInItem(
       StandardCredentials.class,
       context,
-      context instanceof Queue.Task ? Tasks.getAuthenticationOf((Queue.Task)context) : ACL.SYSTEM,
-      Collections.emptyList());
+      authenticationFor(context),
+      List.of());
     CredentialsMatcher allOf = CredentialsMatchers.allOf(
       CredentialsMatchers.withId(credentialsId),
       CredentialsMatchers.anyOf(
@@ -124,14 +125,18 @@ public class CredentialsUtils {
     if (credentialsId == null || credentialsId.isBlank()) {
       return Optional.empty();
     }
-    List<StringCredentials> lookupCredentials = CredentialsProvider.lookupCredentials(
+    List<StringCredentials> lookupCredentials = CredentialsProvider.lookupCredentialsInItem(
       StringCredentials.class,
       context,
-      context instanceof Queue.Task ? Tasks.getAuthenticationOf((Queue.Task)context) : ACL.SYSTEM,
-      Collections.emptyList());
+      authenticationFor(context),
+      List.of());
     CredentialsMatcher matcher = CredentialsMatchers.allOf(
       CredentialsMatchers.withId(credentialsId),
       CredentialsMatchers.instanceOf(StringCredentials.class));
     return Optional.ofNullable(CredentialsMatchers.firstOrNull(lookupCredentials, matcher));
+  }
+
+  private static Authentication authenticationFor(final Item context) {
+    return context instanceof Queue.Task ? Tasks.getAuthenticationOf2((Queue.Task) context) : ACL.SYSTEM2;
   }
 }
