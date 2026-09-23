@@ -6,6 +6,8 @@ import hudson.model.ParameterDefinition;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.StringParameterValue;
+import hudson.model.TaskListener;
+import io.jenkins.plugins.restlistparam.logic.ValueService;
 import io.jenkins.plugins.restlistparam.model.LinkHeaderPagination;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
@@ -83,7 +85,7 @@ class RestMultiListParameterDefinitionJenkinsTest {
     args.put("mimeType", "APPLICATION_JSON");
     args.put("valueExpression", "$.*");
 
-    RestMultiListParameterDefinition def = new DescribableModel<>(RestMultiListParameterDefinition.class).instantiate(args);
+    RestMultiListParameterDefinition def = new DescribableModel<>(RestMultiListParameterDefinition.class).instantiate(args, TaskListener.NULL);
 
     assertEquals("V", def.getName());
     assertTrue(def.isEnableValidation());
@@ -112,7 +114,7 @@ class RestMultiListParameterDefinitionJenkinsTest {
     args.put("valueOrder", "DSC");
     args.put("cacheTime", 5);
 
-    RestMultiListParameterDefinition def = new DescribableModel<>(RestMultiListParameterDefinition.class).instantiate(args);
+    RestMultiListParameterDefinition def = new DescribableModel<>(RestMultiListParameterDefinition.class).instantiate(args, TaskListener.NULL);
 
     assertEquals("$.name", def.getDisplayExpression());
     assertEquals("[\"a\",\"b\"]", def.getDefaultValue());
@@ -134,8 +136,8 @@ class RestMultiListParameterDefinitionJenkinsTest {
         "p", "d", stub.url("/tags"), "", MimeType.APPLICATION_JSON, "$.*", "$.name",
         ValueOrder.DSC, ".*v10\\.6\\.[34].*", 0, "", false);
 
-      assertEquals(single.getValues(), multi.getValues());
-      assertEquals(2, multi.getValues().size());
+      assertEquals(ValueService.entries(single, null, false).getValue(), ValueService.entries(multi, null, false).getValue());
+      assertEquals(2, ValueService.entries(multi, null, false).getValue().size());
     }
   }
 
@@ -150,7 +152,7 @@ class RestMultiListParameterDefinitionJenkinsTest {
         ValueOrder.NONE, ".*", 0, "", false);
       def.setPagination(new LinkHeaderPagination());
 
-      assertEquals(List.of("a", "b", "c"), def.getValues().stream().map(ValueItem::getValue).toList());
+      assertEquals(List.of("a", "b", "c"), ValueService.entries(def, null, false).getValue().stream().map(ValueItem::getValue).toList());
       assertTrue(def.isValid(multi("a", "c")), "entries from page 2 are valid choices");
     }
   }
@@ -372,7 +374,7 @@ class RestMultiListParameterDefinitionJenkinsTest {
         new RestMultiListParameterValue("TARGETS", List.of("{\"name\":\"a\"}", "{\"name\":\"c\"}")));
 
       assertEquals("[\"a\",\"c\"]", rerun.getDefaultValue());
-      List<ValueItem> values = rerun.getValues();
+      List<ValueItem> values = ValueService.entries(rerun, null, false).getValue();
       assertEquals(List.of(true, false, true), values.stream().map(rerun::isDefaultSelected).toList());
     }
   }
@@ -389,7 +391,7 @@ class RestMultiListParameterDefinitionJenkinsTest {
         new RestMultiListParameterValue("TARGETS", List.of("v1", "v2")));
 
       assertEquals("[\"v1\",\"v2\"]", rerun.getDefaultValue());
-      assertEquals(List.of(true, true, false), rerun.getValues().stream().map(rerun::isDefaultSelected).toList());
+      assertEquals(List.of(true, true, false), ValueService.entries(rerun, null, false).getValue().stream().map(rerun::isDefaultSelected).toList());
     }
   }
 

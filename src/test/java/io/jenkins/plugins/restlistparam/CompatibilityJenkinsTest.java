@@ -7,6 +7,7 @@ import hudson.model.ParameterValue;
 import hudson.model.ParametersAction;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.TaskListener;
+import io.jenkins.plugins.restlistparam.logic.ValueService;
 import io.jenkins.plugins.restlistparam.model.CustomHeader;
 import io.jenkins.plugins.restlistparam.model.MimeType;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
@@ -26,7 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Guards the on-disk format of the REST List Parameter. The job and build XML under the
  * {@code CompatibilityJenkinsTest} resources were written by the plugin before the shared base
- * class was extracted, and must keep loading and saving unchanged.
+ * class was extracted, and must keep loading and saving unchanged. Deprecated public API that
+ * other code may still call is covered here as well.
  */
 @WithJenkins
 class CompatibilityJenkinsTest {
@@ -81,6 +83,26 @@ class CompatibilityJenkinsTest {
     EnvVars env = build.getEnvironment(TaskListener.NULL);
     assertEquals(JSON_VALUE, env.get("VERSION"));
     assertEquals(JSON_VALUE, build.getBuildVariableResolver().resolve("VERSION"));
+  }
+
+  /**
+   * {@code getValues()} is deprecated public API; it must keep returning what {@link ValueService} offers.
+   */
+  @Test
+  void deprecatedGetValuesMatchesValueService(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = new StubHttpServer()) {
+      stub.respondJson("/tags", TestConst.validTestJson);
+      RestListParameterDefinition single = new RestListParameterDefinition(
+        "p", "d", stub.url("/tags"), "", MimeType.APPLICATION_JSON, "$.*", "$.name",
+        ValueOrder.DSC, ".*v10\\.6\\.[34].*", 0, "", false);
+      RestMultiListParameterDefinition multi = new RestMultiListParameterDefinition(
+        "p", "d", stub.url("/tags"), "", MimeType.APPLICATION_JSON, "$.*", "$.name",
+        ValueOrder.DSC, ".*v10\\.6\\.[34].*", 0, "", false);
+
+      assertEquals(2, ValueService.entries(single, null, false).getValue().size());
+      assertEquals(ValueService.entries(single, null, false).getValue(), single.getValues());
+      assertEquals(ValueService.entries(multi, null, false).getValue(), multi.getValues());
+    }
   }
 
   /**
