@@ -1,7 +1,12 @@
 package io.jenkins.plugins.restlistparam;
 
 import hudson.model.Item;
+import hudson.model.Job;
+import hudson.model.ParameterDefinition;
+import hudson.model.ParametersDefinitionProperty;
 import hudson.model.SimpleParameterDefinition;
+import hudson.security.ACL;
+import hudson.security.ACLContext;
 import io.jenkins.plugins.restlistparam.logic.ValueService;
 import io.jenkins.plugins.restlistparam.model.CustomHeader;
 import io.jenkins.plugins.restlistparam.model.MimeType;
@@ -9,9 +14,11 @@ import io.jenkins.plugins.restlistparam.model.Pagination;
 import io.jenkins.plugins.restlistparam.model.ResultContainer;
 import io.jenkins.plugins.restlistparam.model.ValueItem;
 import io.jenkins.plugins.restlistparam.model.ValueOrder;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.Stapler;
 
+import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -47,6 +54,8 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
   private List<CustomHeader> customHeaders;
   // null means one request per fetch, as before pagination existed
   private Pagination pagination;
+  // The job found to hold this instance; transient because the definition is stored in config.xml and build.xml
+  private transient volatile WeakReference<Job<?, ?>> owner;
 
   protected AbstractRestListParameterDefinition(final String name,
                                                 final String description,
@@ -241,12 +250,15 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
    * The entry values that submitted elements are checked against when validation is enabled. The cached entries
    * are used when they are fresh and contain every element; otherwise the entries are fetched once, bypassing both
    * caches. Stale cached entries are never used.
+   * <p>
+   * Credentials, custom header credentials and the cache key are resolved against the job of the current web
+   * request or, without one (Pipeline {@code build} step, CLI), against the job holding this definition.
    *
    * @param elements The non-empty elements of the submitted value
    * @return The entry values to check against; empty when the fetch failed
    */
   protected Set<String> entryValuesFor(final Collection<String> elements) {
-    Item context = currentContext();
+    Item context = resolveContext();
     int cacheTime = getCacheTime() != null ? getCacheTime() : 0;
     List<ValueItem> fresh = ValueCache.get().getFresh(ValueCache.keyFor(this, context), cacheTime);
     if (fresh != null) {
@@ -271,6 +283,57 @@ public abstract class AbstractRestListParameterDefinition extends SimpleParamete
       }
     }
     return values;
+  }
+
+  /**
+   * @return The job credentials are resolved against: the job of the current web request, otherwise the job holding
+   * this definition, or {@code null} when there is neither
+   */
+  private Item resolveContext() {
+    Item context = currentContext();
+    return context != null ? context : findOwner();
+  }
+
+  /**
+   * Finds the job whose parameter definitions contain this instance. The job found is remembered and reused while
+   * it still holds this instance. Instances are compared by identity: another job may hold an equal definition with
+   * different folder credentials. If several jobs hold this instance, which neither the UI nor XStream produce, the
+   * first one found wins.
+   *
+   * @return The job holding this definition, or {@code null} when no job holds it
+   */
+  Job<?, ?> findOwner() {
+    WeakReference<Job<?, ?>> cached = owner;
+    Job<?, ?> job = cached != null ? cached.get() : null;
+    if (job != null && holdsThis(job)) {
+      return job;
+    }
+    job = null;
+    // the caller may be anonymous (the Pipeline thread); the scan only locates the job, the credential lookup
+    // uses the job's own authentication
+    try (ACLContext ignored = ACL.as2(ACL.SYSTEM2)) {
+      for (Job<?, ?> candidate : Jenkins.get().allItems(Job.class)) {
+        if (holdsThis(candidate)) {
+          job = candidate;
+          break;
+        }
+      }
+    }
+    owner = job != null ? new WeakReference<>(job) : null;
+    return job;
+  }
+
+  private boolean holdsThis(final Job<?, ?> job) {
+    ParametersDefinitionProperty property = job.getProperty(ParametersDefinitionProperty.class);
+    if (property == null) {
+      return false;
+    }
+    for (ParameterDefinition definition : property.getParameterDefinitions()) {
+      if (definition == this) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

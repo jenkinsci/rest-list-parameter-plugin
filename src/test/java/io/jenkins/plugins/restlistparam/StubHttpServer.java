@@ -38,6 +38,7 @@ public class StubHttpServer implements AutoCloseable {
   private final Map<String, Response> responses = new ConcurrentHashMap<>();
   private final Map<String, Duration> delays = new ConcurrentHashMap<>();
   private final Map<String, Queue<Response>> onceResponses = new ConcurrentHashMap<>();
+  private final Map<String, String[]> requiredHeaders = new ConcurrentHashMap<>();
   private final List<RecordedRequest> requests = Collections.synchronizedList(new ArrayList<>());
   private final ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -86,6 +87,15 @@ public class StubHttpServer implements AutoCloseable {
    */
   public StubHttpServer withDelay(final String path, final Duration delay) {
     delays.put(path, delay);
+    return this;
+  }
+
+  /**
+   * Answers requests to {@code path} (matched like responses) with {@code 401 Unauthorized} unless they carry the
+   * header {@code name} with exactly {@code value}, like an endpoint that needs authentication.
+   */
+  public StubHttpServer requireHeader(final String path, final String name, final String value) {
+    requiredHeaders.put(path, new String[]{name, value});
     return this;
   }
 
@@ -138,7 +148,14 @@ public class StubHttpServer implements AutoCloseable {
       }
     }
 
-    Response response = pollOnce(uri);
+    String[] required = requiredHeaders.containsKey(uri) ? requiredHeaders.get(uri) : requiredHeaders.get(path);
+    Response response = null;
+    if (required != null && !required[1].equals(exchange.getRequestHeaders().getFirst(required[0]))) {
+      response = new Response(401, "text/plain", "unauthorized");
+    }
+    if (response == null) {
+      response = pollOnce(uri);
+    }
     if (response == null) {
       response = pollOnce(path);
     }

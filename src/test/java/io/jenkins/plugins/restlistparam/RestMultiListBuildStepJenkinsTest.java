@@ -47,4 +47,32 @@ class RestMultiListBuildStepJenkinsTest {
     assertEquals(List.of("a", "c"), ((RestMultiListParameterValue) value).getValue());
     r.assertLogContains("got 2: a|c", downRun);
   }
+
+  /**
+   * Validation of the converted value finds the credential in the context of the downstream job
+   * (specs/value-fetching, "Pipeline trigger validates with a job-scoped credential").
+   */
+  @Test
+  void downstreamValidatesWithJobScopedCredential(JenkinsRule r) throws Exception {
+    try (StubHttpServer stub = JobContextValidationJenkinsTest.protectedStub()) {
+      JobContextValidationJenkinsTest.JobScopedCredentialsProvider.register("down", null);
+      WorkflowJob down = r.createProject(WorkflowJob.class, "down");
+      RestMultiListParameterDefinition def = new RestMultiListParameterDefinition(
+        "P", "d", stub.url("/list"), JobContextValidationJenkinsTest.CREDENTIAL_ID, MimeType.APPLICATION_JSON,
+        "$.*", "$", ValueOrder.NONE, ".*", 0, "", false);
+      def.setEnableValidation(true);
+      down.addProperty(new ParametersDefinitionProperty(def));
+      down.setDefinition(new CpsFlowDefinition("echo \"got ${params.P.join('|')}\"", true));
+
+      r.assertBuildStatusSuccess(
+        JobContextValidationJenkinsTest.upstream(r, "string(name: 'P', value: '[\"v1\"]')").scheduleBuild2(0));
+
+      WorkflowRun downRun = down.getLastBuild();
+      assertNotNull(downRun, "downstream build was not started");
+      Object value = downRun.getAction(ParametersAction.class).getParameter("P");
+      assertInstanceOf(RestMultiListParameterValue.class, value);
+      assertEquals(List.of("v1"), ((RestMultiListParameterValue) value).getValue());
+      JobContextValidationJenkinsTest.assertEveryRequestAuthorized(stub);
+    }
+  }
 }
